@@ -1,0 +1,4 @@
+# MT5 → TradingView Script — Python dependencies
+MetaTrader5>=5.0.45
+pytz>=2024.1
+pyperclip>=1.8.2

@@ -1,0 +1,23 @@
+{
+  "symbol_mt5": "XAUUSD",
+  "symbol_tradingview": "ICMARKETS:XAUUSD",
+  "timeframe": "1",
+  "user_timezone": "UTC",
+  "default_sl_points": 200,
+  "default_tp_points": 400,
+  "tp_as_close_threshold_points": 200,
+  "point_size": 0.01,
+  "min_diff_for_exit_line": 0.05,
+  "colors": {
+    "sl_zone": "#9598A1",
+    "sl_opacity": 0.29,
+    "tp_zone": "#009688",
+    "tp_opacity": 0.2,
+    "exit_line": "#9C27B0"
+  },
+  "exit_line_duration_candles": 2,
+  "delay_between_draws_ms": 200,
+  "cdp_port": 9222,
+  "sltp_log_path": "C:\\Users\\<YOUR_USER>\\AppData\\Roaming\\MetaQuotes\\Terminal\\Common\\Files\\sltp_log.csv",
+  "server_offset_override": null
+}
