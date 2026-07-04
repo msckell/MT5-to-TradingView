@@ -1,0 +1,20 @@
+# Local config (copy config.example.json → config.json and edit)
+config.json
+
+# Runtime / generated
+prompt_clipboard.txt
+sltp_log.csv
+.sltp_log_*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
