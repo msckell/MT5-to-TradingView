@@ -807,12 +807,12 @@ def show_menu(
     print("MT5 to TradingView | XAU/USD")
     print(f"Week: Monday {monday_str} to Friday {friday_str}  [{week_label}]")
     print("=" * 55)
-    lun_mar_recs = [r for r in week_records if r["entry_dt"].date() in (days[0][0], days[1][0])]
-    mie_vie_recs = [r for r in week_records if r["entry_dt"].date() in (days[2][0], days[3][0], days[4][0])]
+    lun_mar_recs = [r for r in week_records if r["entry_dt"].date() in (days[0][0], days[1][0], days[2][0])]
+    mie_vie_recs = [r for r in week_records if r["entry_dt"].date() in (days[3][0], days[4][0])]
 
     print("Whole week upload:")
-    print(f"[6] Mon+Tue ({days[0][0].strftime('%d/%m')}–{days[1][0].strftime('%d/%m')})           ({len(lun_mar_recs)} trades)")
-    print(f"[7] Wed+Thu+Fri ({days[2][0].strftime('%d/%m')}–{days[4][0].strftime('%d/%m')})       ({len(mie_vie_recs)} trades)")
+    print(f"[6] Mon+Tue+Wed ({days[0][0].strftime('%d/%m')}–{days[2][0].strftime('%d/%m')})       ({len(lun_mar_recs)} trades)")
+    print(f"[7] Thu+Fri ({days[3][0].strftime('%d/%m')}–{days[4][0].strftime('%d/%m')})           ({len(mie_vie_recs)} trades)")
     print("·  " * 12)
 
     day_names = ["Monday   ", "Tuesday  ", "Wednesday", "Thursday ", "Friday   "]
@@ -837,10 +837,10 @@ def show_menu(
             label = f"Only {WEEKDAY_NAMES[day_idx]} {day_date.strftime('%d/%m')}"
             return (label, day_records)
         if choice == "6":
-            label = f"Mon+Tue ({days[0][0].strftime('%d/%m')}–{days[1][0].strftime('%d/%m')})"
+            label = f"Mon+Tue+Wed ({days[0][0].strftime('%d/%m')}–{days[2][0].strftime('%d/%m')})"
             return (label, lun_mar_recs)
         if choice == "7":
-            label = f"Wed+Thu+Fri ({days[2][0].strftime('%d/%m')}–{days[4][0].strftime('%d/%m')})"
+            label = f"Thu+Fri ({days[3][0].strftime('%d/%m')}–{days[4][0].strftime('%d/%m')})"
             return (label, mie_vie_recs)
         if choice == "9":
             return "HISTORICAL"
