@@ -6,6 +6,9 @@ prompt_clipboard.txt
 sltp_log.csv
 .sltp_log_*.tmp
 
+# Launcher shortcut (machine-specific paths) — created by tools/install.ps1
+*.lnk
+
 # Python
 __pycache__/
 *.py[cod]
