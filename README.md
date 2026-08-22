@@ -105,12 +105,13 @@ Open MetaTrader 5 and log in, then double-click the **MT5 to TradingView (Trade.
 
 Pick a week and a day range, click **Generate & copy prompt**. The trades show up in the table (entry, exit, side, P&L) and the drawing prompt lands on your clipboard. Open Claude Code, paste with `Ctrl+V`, press Enter — it verifies the chart and draws the trades.
 
-The GUI is plain Tkinter, which ships with Python — no extra dependencies.
+The app is Qt (PySide6), built from the design in `docs/design/`. Every MetaTrader call runs on a worker thread, so the window never freezes while a week loads. The **Log** control in the status bar opens a drawer with the full engine output — that is where a missing SL/TP row shows up.
 
-**Console fallback.** The same engine still has its interactive menu if you ever need it (or want to script around it):
+**Fallbacks.** Two, both intentionally kept:
 
 ```bash
-python app/mt5_to_tradingview.py
+pythonw app/gui.py               # the older Tkinter window — no dependencies beyond Python
+python app/mt5_to_tradingview.py # the engine's interactive console menu
 ```
 
 ## Project layout
@@ -119,12 +120,14 @@ python app/mt5_to_tradingview.py
 .
 ├─ MT5 to TradingView (Trade.LINK).lnk   ← the launcher (created by tools/install.ps1)
 ├─ app/
-│  ├─ gui.py                 desktop app — the main entry point
+│  ├─ gui_qt.py              desktop app (Qt) — the main entry point
+│  ├─ gui.py                 the older Tkinter window, kept as a fallback
 │  └─ mt5_to_tradingview.py  the engine (also runnable as a console menu)
 ├─ mql5/SLTPLogger.mq5       Expert Advisor: logs live SL/TP to CSV
 ├─ tools/
 │  ├─ install.ps1            deps + config + shortcut
 │  └─ make_logo.py           redraws the icon and logos from vector geometry
+├─ docs/design/              the design canvas the Qt app is built from
 ├─ assets/                   icon.ico + logo PNGs (see assets/README.md)
 ├─ config.example.json       copy to config.json (gitignored) and edit
 └─ requirements.txt
@@ -132,7 +135,8 @@ python app/mt5_to_tradingview.py
 
 ## Design notes
 
-- **Separation of concerns.** The data engine (fetch, pair, resolve SL/TP, convert time, build prompt) is fully decoupled from the CLI menu, which is exactly why the GUI could take over as the main entry point without the core changing at all.
+- **Separation of concerns.** The data engine (fetch, pair, resolve SL/TP, convert time, build prompt) is fully decoupled from the CLI menu, which is exactly why two different GUIs could take over as the entry point without the core changing a line.
+- **One thread owns MetaTrader.** Every MT5 call in the Qt app happens on a single worker thread and comes back as a signal; the engine's module-level `log()` is repointed at that signal, so the whole pipeline ends up in the log drawer.
 - **Robust timezone detection.** The broker offset is anchored on a calendar heuristic and only *cross-checked* against the live tick (which depends on the PC clock and can lie) — never trusted blindly. A `server_offset_override` in config wins unconditionally.
 - **Atomic, retry-safe CSV cleanup.** Old cache rows are pruned with a tempfile + atomic replace, retried if the EA briefly holds the file open.
 

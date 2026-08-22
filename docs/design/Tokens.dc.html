@@ -1,0 +1,145 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #101010; }
+    a { color: #C9C9C9; } a:hover { color: #EDEDED; }
+    .s { font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif; }
+    .m { font-family: "Source Code Pro", "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+    .cap { font-family: "Source Code Pro", "Cascadia Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6B6B6B; }
+    .sw { width: 22px; height: 22px; border-radius: 3px; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+    .row { display: flex; align-items: center; gap: 9px; height: 26px; }
+    .nm { font-size: 10.5px; color: #9A9A9A; line-height: 1.1; }
+    .hx { font-family: "Source Code Pro", "Cascadia Mono", Consolas, monospace; font-size: 10px; color: #6B6B6B; line-height: 1.2; }
+    .spec { font-family: "Source Code Pro", "Cascadia Mono", Consolas, monospace; font-size: 10.5px; color: #6B6B6B; }
+  </style>
+</helmet>
+
+<div class="s" style="width: 820px; height: 780px; padding: 32px; box-sizing: border-box; background: #101010; display: flex; flex-direction: column; gap: 22px;">
+
+  <div style="display: flex; align-items: flex-end; gap: 14px;">
+    <div style="display: flex; flex-direction: column; gap: 5px;">
+      <div style="font-size: 18px; font-weight: 700; color: #EDEDED;">Design tokens</div>
+      <div class="m" style="font-size: 11.5px; color: #767676;">Everything here lifts straight into the Qt stylesheet</div>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <div style="display: flex; align-items: baseline; gap: 1px;">
+      <span class="m" style="font-size: 12px; color: #767676;">Trade.</span>
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.03em; color: #9A9A9A;">LINK</span>
+    </div>
+  </div>
+
+  <!-- the rule -->
+  <div style="display: flex; align-items: flex-start; gap: 13px; padding: 15px 17px; border-radius: 5px; background: #0B0B0B; border: 1px solid #2B2B2B;">
+    <div style="display: flex; gap: 4px; margin-top: 2px; flex: none;">
+      <span style="width: 11px; height: 11px; border-radius: 2px; background: #3F7355;"></span>
+      <span style="width: 11px; height: 11px; border-radius: 2px; background: #4E9E6A;"></span>
+      <span style="width: 11px; height: 11px; border-radius: 2px; background: #C0524F;"></span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 5px;">
+      <div style="font-size: 12.5px; font-weight: 600; color: #C9C9C9;">Two greens, and they never mean the same thing.</div>
+      <div style="font-size: 11.5px; line-height: 1.55; color: #767676;">The action green is deeper and desaturated; the money green is lighter and brighter; the logo green belongs to the mark alone and never touches the interface. They share a hue family, so the lightness gap is what keeps them apart — never put the two at the same size side by side, and never tint a surface with either. Outside those three colours and the connection dot, the window is grey.</div>
+    </div>
+  </div>
+
+  <!-- colours -->
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 7px;">
+      <div class="cap">Surfaces</div>
+      <div class="row"><span class="sw" style="background: #070707;"></span><span><span class="nm">Desktop</span><br><span class="hx">#070707</span></span></div>
+      <div class="row"><span class="sw" style="background: #101010;"></span><span><span class="nm">Window</span><br><span class="hx">#101010</span></span></div>
+      <div class="row"><span class="sw" style="background: #0B0B0B;"></span><span><span class="nm">Bars &amp; card</span><br><span class="hx">#0B0B0B</span></span></div>
+      <div class="row"><span class="sw" style="background: #151515;"></span><span><span class="nm">Inset track</span><br><span class="hx">#151515</span></span></div>
+      <div class="row"><span class="sw" style="background: #1A1A1A;"></span><span><span class="nm">Control</span><br><span class="hx">#1A1A1A</span></span></div>
+      <div class="row"><span class="sw" style="background: #202020;"></span><span><span class="nm">Chip</span><br><span class="hx">#202020</span></span></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 7px;">
+      <div class="cap">Lines</div>
+      <div class="row"><span class="sw" style="background: #262626;"></span><span><span class="nm">Window edge</span><br><span class="hx">#262626</span></span></div>
+      <div class="row"><span class="sw" style="background: #2B2B2B;"></span><span><span class="nm">Control edge</span><br><span class="hx">#2B2B2B</span></span></div>
+      <div class="row"><span class="sw" style="background: #1D1D1D;"></span><span><span class="nm">Hairline</span><br><span class="hx">#1D1D1D</span></span></div>
+      <div class="row"><span class="sw" style="background: #303030;"></span><span><span class="nm">Divider</span><br><span class="hx">#303030</span></span></div>
+      <div class="row"><span class="sw" style="background: #343434;"></span><span><span class="nm">Selected ring</span><br><span class="hx">#343434</span></span></div>
+      <div class="row"><span class="sw" style="background: #242424;"></span><span><span class="nm">Selected fill</span><br><span class="hx">#242424</span></span></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 7px;">
+      <div class="cap">Text</div>
+      <div class="row"><span class="sw" style="background: #EDEDED;"></span><span><span class="nm">Primary</span><br><span class="hx">#EDEDED</span></span></div>
+      <div class="row"><span class="sw" style="background: #C9C9C9;"></span><span><span class="nm">Body</span><br><span class="hx">#C9C9C9</span></span></div>
+      <div class="row"><span class="sw" style="background: #9A9A9A;"></span><span><span class="nm">Secondary</span><br><span class="hx">#9A9A9A</span></span></div>
+      <div class="row"><span class="sw" style="background: #767676;"></span><span><span class="nm">Tertiary</span><br><span class="hx">#767676</span></span></div>
+      <div class="row"><span class="sw" style="background: #6B6B6B;"></span><span><span class="nm">Caption</span><br><span class="hx">#6B6B6B</span></span></div>
+      <div class="row"><span class="sw" style="background: #4A4A4A;"></span><span><span class="nm">Disabled</span><br><span class="hx">#4A4A4A</span></span></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 7px;">
+      <div class="cap">Action &amp; money</div>
+      <div class="row"><span class="sw" style="background: #3F7355;"></span><span><span class="nm">Action</span><br><span class="hx">#3F7355</span></span></div>
+      <div class="row"><span class="sw" style="background: #F2F6F3;"></span><span><span class="nm">On action</span><br><span class="hx">#F2F6F3</span></span></div>
+      <div class="row"><span class="sw" style="background: #4E9E6A;"></span><span><span class="nm">Profit &amp; online</span><br><span class="hx">#4E9E6A</span></span></div>
+      <div class="row"><span class="sw" style="background: #C0524F;"></span><span><span class="nm">Loss &amp; offline</span><br><span class="hx">#C0524F</span></span></div>
+      <div class="row"><span class="sw" style="background: #B08B3E;"></span><span><span class="nm">Warning</span><br><span class="hx">#B08B3E</span></span></div>
+      <div class="row"><span class="sw" style="background: #2FDAA6;"></span><span><span class="nm">Logo only</span><br><span class="hx">#2FDAA6</span></span></div>
+    </div>
+  </div>
+
+  <!-- type + geometry -->
+  <div style="display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 26px;">
+
+    <div style="display: flex; flex-direction: column; gap: 9px;">
+      <div class="cap">Type — Source Sans 3 / Source Code Pro</div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <div style="display: flex; align-items: baseline; gap: 1px;">
+          <span class="m" style="font-size: 16px; color: #9A9A9A;">Trade.</span>
+          <span style="font-size: 16px; font-weight: 700; letter-spacing: 0.03em; color: #EDEDED;">LINK</span>
+        </div>
+        <div style="flex-grow: 1;"></div><span class="spec">16 · Mono + Sans 700</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <span style="font-size: 13.5px; font-weight: 600; color: #EDEDED;">Generate &amp; copy prompt</span>
+        <div style="flex-grow: 1;"></div><span class="spec">Sans 13.5 / 600</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <span style="font-size: 13px; color: #C9C9C9;">Thu 21/08 · body copy</span>
+        <div style="flex-grow: 1;"></div><span class="spec">Sans 13 / 400</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <span class="m" style="font-size: 12.5px; color: #C9C9C9;">3,427.40 &nbsp; 3,421.15</span>
+        <div style="flex-grow: 1;"></div><span class="spec">Mono 12.5 · tabular</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <span class="m" style="font-size: 30px; font-weight: 600; color: #4E9E6A;">+$89.00</span>
+        <div style="flex-grow: 1;"></div><span class="spec">Mono 30 / 600</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <span class="cap">Pick the range</span>
+        <div style="flex-grow: 1;"></div><span class="spec">Mono 10 · .12em caps</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 9px;">
+      <div class="cap">Geometry</div>
+      <div style="display: flex; justify-content: space-between;"><span class="nm" style="font-size: 11.5px;">Window radius</span><span class="spec">8 · border 1px</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="nm" style="font-size: 11.5px;">Card</span><span class="spec">6</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="nm" style="font-size: 11.5px;">Control / button</span><span class="spec">5</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="nm" style="font-size: 11.5px;">Segment / chip</span><span class="spec">3 · 4</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="nm" style="font-size: 11.5px;">Control heights</span><span class="spec">34 · 42 · 46</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="nm" style="font-size: 11.5px;">Table row</span><span class="spec">32</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="nm" style="font-size: 11.5px;">Window gutter</span><span class="spec">26 · stack gap 16</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="nm" style="font-size: 11.5px;">Window shadow</span><span class="spec">0 16 36 −16 / 80%</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="nm" style="font-size: 11.5px;">Glows</span><span class="spec">none, anywhere</span></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

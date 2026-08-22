@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #0d1117; }
+    a { color: #58a6ff; } a:hover { color: #79c0ff; }
+    .tkfont { font-family: "Segoe UI", system-ui, sans-serif; }
+    .tkmono { font-family: "Cascadia Mono", Consolas, "Courier New", monospace; }
+  </style>
+</helmet>
+
+<div class="tkfont" style="width: 760px; height: 752px; display: flex; flex-direction: column; background: #0d1117; overflow: hidden;">
+
+  <!-- Windows default title bar — the app has no say over this -->
+  <div style="height: 32px; background: #ffffff; display: flex; align-items: center; padding: 0 0 0 10px; flex: none;">
+    <img src="icon.png" alt="" style="width: 16px; height: 16px; display: block;">
+    <div style="font-size: 12px; color: #1a1a1a; margin-left: 8px;">MT5 -&gt; TradingView</div>
+    <div style="flex-grow: 1;"></div>
+    <div style="display: flex; align-items: stretch; height: 32px;">
+      <div style="width: 46px; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 10px; height: 1px; background: #1a1a1a;"></div>
+      </div>
+      <div style="width: 46px; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 9px; height: 9px; border: 1px solid #1a1a1a;"></div>
+      </div>
+      <div style="width: 46px; display: flex; align-items: center; justify-content: center;">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#1a1a1a" stroke-width="1"><path d="M0.5 0.5 L9.5 9.5 M9.5 0.5 L0.5 9.5"></path></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tk client area: 760 x 720 -->
+  <div style="flex-grow: 1; display: flex; flex-direction: column; background: #0d1117; padding: 0 16px;">
+
+    <!-- header -->
+    <div style="display: flex; align-items: center; margin-top: 14px; margin-bottom: 2px;">
+      <div style="font-size: 20px; font-weight: 600; color: #e6edf3;">MT5&nbsp; →&nbsp; TradingView</div>
+      <div style="flex-grow: 1;"></div>
+      <div style="display: flex; align-items: center; gap: 4px; background: #161b22; padding: 3px 8px;">
+        <span style="color: #2ea043; font-size: 12px; line-height: 1;">●</span>
+        <span style="font-size: 12px; color: #e6edf3;">MT5 · XAUUSD</span>
+      </div>
+    </div>
+    <div style="font-size: 12px; color: #8b949e; margin-bottom: 12px;">Build the weekly drawing prompt and copy it to the clipboard.</div>
+
+    <!-- controls -->
+    <div style="display: flex; align-items: flex-start;">
+      <div style="display: flex; flex-direction: column;">
+        <div style="font-size: 12px; color: #8b949e;">Week</div>
+        <div style="margin-top: 2px; margin-bottom: 8px; width: 268px; height: 24px; background: #161b22; border: 1px solid #21262d; display: flex; align-items: center; padding: 0 8px;">
+          <span class="tkfont" style="font-size: 12px; color: #e6edf3;">Current week&nbsp; ·&nbsp; 18/08–22/08/26</span>
+          <div style="flex-grow: 1;"></div>
+          <svg width="9" height="6" viewBox="0 0 9 6" fill="none" stroke="#8b949e" stroke-width="1.4"><path d="M1 1 L4.5 4.5 L8 1"></path></svg>
+        </div>
+      </div>
+
+      <!-- range: LabelFrame with groove relief + radio stacks -->
+      <div style="margin-left: 18px; display: flex; flex-direction: column;">
+        <div style="position: relative; border: 1px solid #30363d; padding: 8px 6px 5px 6px;">
+          <div style="position: absolute; top: -7px; left: 6px; background: #0d1117; padding: 0 2px; font-size: 11px; color: #8b949e;">Whole week upload</div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 1px 0;">
+            <span style="width: 13px; height: 13px; border-radius: 50%; background: #161b22; border: 1px solid #8b949e; display: inline-flex; align-items: center; justify-content: center;">
+              <span style="width: 5px; height: 5px; border-radius: 50%; background: #484f58;"></span>
+            </span>
+            <span style="font-size: 12px; color: #e6edf3;">Mon + Tue + Wed</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 1px 0;">
+            <span style="width: 13px; height: 13px; border-radius: 50%; background: #161b22; border: 1px solid #8b949e;"></span>
+            <span style="font-size: 12px; color: #e6edf3;">Thu + Fri</span>
+          </div>
+        </div>
+        <div style="font-size: 9px; color: #8b949e; letter-spacing: 3px; margin: 3px 0;">· · · · · · · · · ·</div>
+        <div style="display: flex; flex-direction: column; padding-left: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px; padding: 1px 0;">
+            <span style="width: 13px; height: 13px; border-radius: 50%; background: #161b22; border: 1px solid #8b949e;"></span>
+            <span style="font-size: 12px; color: #e6edf3;">Monday</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 1px 0;">
+            <span style="width: 13px; height: 13px; border-radius: 50%; background: #161b22; border: 1px solid #8b949e;"></span>
+            <span style="font-size: 12px; color: #e6edf3;">Tuesday</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 1px 0;">
+            <span style="width: 13px; height: 13px; border-radius: 50%; background: #161b22; border: 1px solid #8b949e;"></span>
+            <span style="font-size: 12px; color: #e6edf3;">Wednesday</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 1px 0;">
+            <span style="width: 13px; height: 13px; border-radius: 50%; background: #161b22; border: 1px solid #8b949e;"></span>
+            <span style="font-size: 12px; color: #e6edf3;">Thursday</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 1px 0;">
+            <span style="width: 13px; height: 13px; border-radius: 50%; background: #161b22; border: 1px solid #8b949e;"></span>
+            <span style="font-size: 12px; color: #e6edf3;">Friday</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- buttons -->
+    <div style="display: flex; align-items: center; margin-top: 4px; margin-bottom: 8px;">
+      <div style="background: #238636; color: #ffffff; font-size: 13px; font-weight: 600; padding: 8px 14px;">Generate &amp; copy prompt</div>
+      <div style="background: #161b22; color: #e6edf3; font-size: 12px; padding: 8px 12px; margin-left: 8px;">Clean SL/TP cache</div>
+      <div style="flex-grow: 1;"></div>
+      <div style="background: #161b22; color: #8b949e; font-size: 12px; padding: 8px 12px;">Reconnect</div>
+    </div>
+
+    <!-- table head -->
+    <div style="display: flex; align-items: center; margin-top: 6px; margin-bottom: 2px;">
+      <div style="font-size: 12px; color: #8b949e;">Trades</div>
+      <div style="flex-grow: 1;"></div>
+      <div style="font-size: 12px; font-weight: 600; color: #2ea043;">Mon + Tue + Wed&nbsp; ·&nbsp; 6 trades&nbsp; ·&nbsp; $+159.50</div>
+    </div>
+
+    <!-- treeview -->
+    <div style="flex-grow: 1; background: #21262d; padding: 1px; display: flex; min-height: 0;">
+      <div style="flex-grow: 1; background: #161b22; display: flex; flex-direction: column; min-height: 0;">
+        <div style="display: grid; grid-template-columns: 40px 1fr 60px 90px 90px 90px; background: #21262d; height: 24px; align-items: center; font-size: 12px; font-weight: 600; color: #8b949e;">
+          <div style="text-align: center;">#</div>
+          <div style="padding-left: 6px;">Day</div>
+          <div style="text-align: center;">Side</div>
+          <div style="text-align: right; padding-right: 6px;">Entry</div>
+          <div style="text-align: right; padding-right: 6px;">Exit</div>
+          <div style="text-align: right; padding-right: 6px;">P&amp;L</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr 60px 90px 90px 90px; height: 22px; align-items: center; font-size: 12px; color: #2ea043;">
+          <div style="text-align: center;">1</div><div style="padding-left: 6px;">Tue 19/08 09:14</div><div style="text-align: center;">Long</div><div style="text-align: right; padding-right: 6px;">3412.55</div><div style="text-align: right; padding-right: 6px;">3418.90</div><div style="text-align: right; padding-right: 6px;">+63.50</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr 60px 90px 90px 90px; height: 22px; align-items: center; font-size: 12px; color: #2ea043;">
+          <div style="text-align: center;">2</div><div style="padding-left: 6px;">Tue 19/08 11:02</div><div style="text-align: center;">Short</div><div style="text-align: right; padding-right: 6px;">3421.10</div><div style="text-align: right; padding-right: 6px;">3417.65</div><div style="text-align: right; padding-right: 6px;">+34.50</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr 60px 90px 90px 90px; height: 22px; align-items: center; font-size: 12px; color: #da3633;">
+          <div style="text-align: center;">3</div><div style="padding-left: 6px;">Tue 19/08 14:47</div><div style="text-align: center;">Long</div><div style="text-align: right; padding-right: 6px;">3415.80</div><div style="text-align: right; padding-right: 6px;">3412.20</div><div style="text-align: right; padding-right: 6px;">-36.00</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr 60px 90px 90px 90px; height: 22px; align-items: center; font-size: 12px; color: #2ea043;">
+          <div style="text-align: center;">4</div><div style="padding-left: 6px;">Wed 20/08 08:36</div><div style="text-align: center;">Long</div><div style="text-align: right; padding-right: 6px;">3408.95</div><div style="text-align: right; padding-right: 6px;">3416.40</div><div style="text-align: right; padding-right: 6px;">+74.50</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr 60px 90px 90px 90px; height: 22px; align-items: center; font-size: 12px; color: #da3633;">
+          <div style="text-align: center;">5</div><div style="padding-left: 6px;">Wed 20/08 10:19</div><div style="text-align: center;">Short</div><div style="text-align: right; padding-right: 6px;">3419.25</div><div style="text-align: right; padding-right: 6px;">3421.60</div><div style="text-align: right; padding-right: 6px;">-23.50</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr 60px 90px 90px 90px; height: 22px; align-items: center; font-size: 12px; color: #2ea043;">
+          <div style="text-align: center;">6</div><div style="padding-left: 6px;">Wed 20/08 15:58</div><div style="text-align: center;">Long</div><div style="text-align: right; padding-right: 6px;">3414.10</div><div style="text-align: right; padding-right: 6px;">3418.75</div><div style="text-align: right; padding-right: 6px;">+46.50</div>
+        </div>
+      </div>
+      <div style="width: 13px; background: #0d1117; display: flex; flex-direction: column; align-items: center; padding: 1px 0;">
+        <div style="width: 11px; height: 40px; background: #21262d;"></div>
+      </div>
+    </div>
+
+    <!-- log -->
+    <div style="font-size: 12px; color: #8b949e; margin-top: 10px; margin-bottom: 2px;">Log</div>
+    <div class="tkmono" style="height: 122px; background: #161b22; display: flex; flex: none;">
+      <div style="flex-grow: 1; padding: 2px 4px; font-size: 12px; line-height: 15px; overflow: hidden;">
+        <div style="color: #2ea043;">[OK] Connected to MT5 - account 11007911 (ICMarketsSC-MT5-4)</div>
+        <div style="color: #8b949e;">[INFO] Offset from calendar (no live tick): GMT+3</div>
+        <div style="color: #2ea043;">[OK] 26 deals downloaded from MT5</div>
+        <div style="color: #2ea043;">[OK] 13 closed trades paired</div>
+        <div style="color: #2ea043;">[OK] sltp_log.csv loaded: 175 positions (893 rows, 0 skipped)</div>
+        <div style="color: #d29922;">[WARN] Trade #4: no original SL in the EA log -&gt; RED drawn at the</div>
+        <div style="color: #d29922;">exit price (no violet). Check the EA was running when the SL was set.</div>
+        <div style="color: #2ea043;">[OK] Mon + Tue + Wed: 6 trades · $+159.50 · 2 exit lines</div>
+      </div>
+      <div style="width: 13px; background: #0d1117; display: flex; flex-direction: column; align-items: center; padding: 1px 0;">
+        <div style="width: 11px; height: 60px; background: #21262d;"></div>
+      </div>
+    </div>
+
+    <!-- footer -->
+    <div style="font-size: 12px; color: #2ea043; margin-top: 6px; margin-bottom: 12px;">Prompt copied (5,146 chars) — paste into Claude Code (Ctrl+V).</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

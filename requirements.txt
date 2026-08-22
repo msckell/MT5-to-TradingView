@@ -2,3 +2,6 @@
 MetaTrader5>=5.0.45
 pytz>=2024.1
 pyperclip>=1.8.2
+# Desktop app. Essentials is the slim PySide6 (no WebEngine / Multimedia).
+# Only gui_qt.py needs it — the console menu and gui.py run without it.
+PySide6-Essentials>=6.6
