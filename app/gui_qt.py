@@ -16,6 +16,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from time import monotonic
 
 APP_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = APP_DIR.parent
@@ -418,6 +419,7 @@ class WeekSelector(QFrame):
         self.setFixedHeight(42)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self._weeks_back = 0
+        self._menu_closed_at = 0.0
         self._apply_border(CTRL_EDGE)
 
         row = QHBoxLayout(self)
@@ -470,6 +472,11 @@ class WeekSelector(QFrame):
     def mousePressEvent(self, event) -> None:  # noqa: N802 — Qt naming
         if event.button() != Qt.MouseButton.LeftButton or not self._items:
             return
+        # The open menu closes itself on this very press, and the press then
+        # lands here — without this the second click reopens it instead of
+        # leaving it shut.
+        if monotonic() - self._menu_closed_at < 0.25:
+            return
         menu = QMenu(self)
         menu.setFont(font(SANS, 13))
         menu.setStyleSheet(
@@ -482,8 +489,12 @@ class WeekSelector(QFrame):
             wb, tag, dates = item
             action = menu.addAction(f"{tag}    {dates}")
             action.triggered.connect(lambda _c=False, it=item: self._pick(it))
+        menu.aboutToHide.connect(self._menu_hidden)
         menu.setMinimumWidth(self.width())
         menu.exec(self.mapToGlobal(QPoint(0, self.height() + 4)))
+
+    def _menu_hidden(self) -> None:
+        self._menu_closed_at = monotonic()
 
     def _pick(self, item: tuple[int, str, str]) -> None:
         if item[0] == self._weeks_back:
@@ -725,7 +736,12 @@ class MainWindow(QWidget):
         self.setWindowTitle("MT5 to TradingView (Trade.LINK)")
         if ICON_PATH.exists():
             self.setWindowIcon(QIcon(str(ICON_PATH)))
-        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
+        # Frameless drops WS_MINIMIZEBOX/WS_MAXIMIZEBOX, and without those Windows
+        # ignores a click on our taskbar button. These hints put them back.
+        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint
+                            | Qt.WindowType.WindowMinimizeButtonHint
+                            | Qt.WindowType.WindowMaximizeButtonHint
+                            | Qt.WindowType.WindowSystemMenuHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setMouseTracking(True)
         self.resize(880 + SHADOW_PAD * 2, 640 + SHADOW_PAD * 2)
@@ -810,7 +826,7 @@ class MainWindow(QWidget):
         name_row.addWidget(trade_lb)
         name_row.addWidget(link_lb)
         name_row.addStretch(1)
-        tagline = QLabel("Amplify to TradingView Dataflow")
+        tagline = QLabel("Amplify → TradingView")
         tagline.setFont(font(MONO, 10))
         tagline.setStyleSheet(f"color: {T_THIRD};")
         name_col.addLayout(name_row)
