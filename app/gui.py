@@ -37,6 +37,16 @@ def _enable_dpi_awareness() -> None:
         pass
 
 
+def _set_app_id() -> None:
+    """Own our taskbar entry so it shows the app icon, not pythonw's."""
+    try:
+        from ctypes import windll
+
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID("MT5.TradingView.Bridge")
+    except Exception:  # noqa: BLE001 — not Windows, or no ctypes
+        pass
+
+
 def _require_dependencies() -> None:
     """Fail with a visible dialog instead of dying silently under pythonw."""
     missing = [m for m in ("MetaTrader5", "pytz") if importlib.util.find_spec(m) is None]
@@ -54,6 +64,7 @@ def _require_dependencies() -> None:
 
 
 _enable_dpi_awareness()
+_set_app_id()
 _require_dependencies()
 
 import pytz  # noqa: E402 — imported after the dependency check
