@@ -1,11 +1,23 @@
 # assets
 
-Drop the app icon here as `icon.ico` (multi-size .ico: 16/32/48/256 px).
+Brand assets for the app. All of them are generated from vector geometry, so
+they stay sharp at any size — nothing here is an upscaled bitmap.
 
-It is picked up in two places:
+| File | What it is |
+|---|---|
+| `icon.ico` | App icon. Seven frames (16–256 px), each **drawn at its own size** rather than downscaled from one raster. Used for the launcher shortcut and the app window. |
+| `logo-icon.png` | The icon at 1024 px, transparent corners. |
+| `logo-wide.png` | The wide four-node mark at 1608 px, transparent background. For the app header and any doc that needs the full lockup. |
 
-- `tools/install.ps1` sets it as the icon of the "MT5 to TradingView" shortcut.
-- `app/gui.py` uses it as the window / taskbar icon.
+## Regenerating
 
-Both degrade gracefully if the file is absent. After adding or replacing the
-icon, re-run `tools/install.ps1` so the shortcut picks up the change.
+`tools/make_logo.py` holds the geometry and redraws everything:
+
+```bash
+python tools/make_logo.py          # icon.ico
+python tools/make_logo.py --png    # icon.ico + both PNGs
+```
+
+It needs Pillow, which is a dev-time dependency only — the app itself does not
+import it. After regenerating the icon, re-run `tools/install.ps1` so the
+launcher shortcut picks up the new one.
