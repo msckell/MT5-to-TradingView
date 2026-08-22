@@ -66,7 +66,7 @@ import pytz  # noqa: E402 — imported after the dependency check
 from PySide6.QtCore import (  # noqa: E402
     QByteArray, QEvent, QObject, QPoint, QSize, Qt, QThread, QTimer, Signal, Slot,
 )
-from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPixmap  # noqa: E402
+from PySide6.QtGui import QColor, QCursor, QFont, QIcon, QPainter, QPixmap  # noqa: E402
 from PySide6.QtSvg import QSvgRenderer  # noqa: E402
 from PySide6.QtWidgets import (  # noqa: E402
     QApplication, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QMenu,
@@ -413,20 +413,33 @@ class RangePicker(QWidget):
 
 
 class GrabAwareMenu(QMenu):
-    """A menu that shows the hand only where something is actually clickable.
+    """A menu whose only click targets are its options and the row that opened it.
 
-    An open menu holds the mouse grab, and the grab paints the cursor for the
-    whole screen — so a hand set on the menu bleeds over the entire app, and a
-    plain arrow lies about the options. Following the pointer instead keeps the
-    hand on the options and on the row that opened it, and hands the arrow back
-    everywhere else.
+    An open menu holds the mouse grab, and under a grab the cursor is painted
+    from whatever window the pointer is over — a window that stops re-reading
+    which widget sits under the pointer for as long as the grab is up. So a
+    cursor set on the menu lands only while the pointer is inside the menu, and
+    the shape the app window froze on (the hand of the row that opened us) is
+    what shows everywhere else. An application override cursor is the one shape
+    that reaches every window at once, so the poll below reads the pointer and
+    the menu owns that shape until it closes.
+
+    Clicks follow the same rule the cursor draws: the options and the owner row
+    act, and a click that lands anywhere else inside the app does nothing — the
+    menu closes where it says it closes (or on Esc). Clicks outside the app are
+    left alone, so another window still gets them.
     """
+
+    POLL_MS = 30  # a grab swallows the moves we would otherwise track the pointer with
 
     def __init__(self, owner: QWidget) -> None:
         super().__init__(owner)
         self._owner = owner
+        self._hand: bool | None = None  # None = no override cursor of ours is up
         self.setMouseTracking(True)
-        self.setCursor(Qt.CursorShape.ArrowCursor)
+        self._poll = QTimer(self)
+        self._poll.setInterval(self.POLL_MS)
+        self._poll.timeout.connect(self._track_cursor)
 
     def _clickable_at(self, global_pos: QPoint) -> bool:
         if self.rect().contains(self.mapFromGlobal(global_pos)):
@@ -434,16 +447,56 @@ class GrabAwareMenu(QMenu):
         owner = self._owner
         return owner is not None and owner.rect().contains(owner.mapFromGlobal(global_pos))
 
-    def mouseMoveEvent(self, event) -> None:  # noqa: N802 — Qt naming
-        hand = self._clickable_at(event.globalPosition().toPoint())
-        self.setCursor(Qt.CursorShape.PointingHandCursor if hand
-                       else Qt.CursorShape.ArrowCursor)
-        super().mouseMoveEvent(event)
+    def _inside_app(self, global_pos: QPoint) -> bool:
+        top = self._owner.window() if self._owner is not None else None
+        return top is not None and top.frameGeometry().contains(global_pos)
+
+    def _track_cursor(self) -> None:
+        hand = self._clickable_at(QCursor.pos())
+        if hand == self._hand:
+            return
+        shape = QCursor(Qt.CursorShape.PointingHandCursor if hand
+                        else Qt.CursorShape.ArrowCursor)
+        if self._hand is None:
+            QApplication.setOverrideCursor(shape)
+        else:
+            QApplication.changeOverrideCursor(shape)
+        self._hand = hand
+
+    def _release_cursor(self) -> None:
+        if self._hand is not None:
+            QApplication.restoreOverrideCursor()
+            self._hand = None
+
+    def _swallow(self, event) -> bool:
+        """A click off every target, but still on the app, is dead on arrival."""
+        pos = event.globalPosition().toPoint()
+        return not self._clickable_at(pos) and self._inside_app(pos)
+
+    def showEvent(self, event) -> None:  # noqa: N802 — Qt naming
+        super().showEvent(event)
+        # The pointer is still on the row that was just clicked, so paint the
+        # hand now — the first move only comes once the cursor already lied.
+        self._track_cursor()
+        self._poll.start()
 
     def hideEvent(self, event) -> None:  # noqa: N802 — Qt naming
-        # Never let the grab's last cursor outlive the menu.
-        self.setCursor(Qt.CursorShape.ArrowCursor)
+        # Never let the override cursor outlive the menu.
+        self._poll.stop()
+        self._release_cursor()
         super().hideEvent(event)
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802 — Qt naming
+        if self._swallow(event):
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:  # noqa: N802 — Qt naming
+        if self._swallow(event):
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
 
 
 class WeekSelector(QFrame):
