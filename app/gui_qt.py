@@ -121,7 +121,8 @@ GRAB_BAND = 8  # how far outside the frame the resize grip reaches
 
 # The day split lives here, in show_menu() in the engine, and in gui.py.
 # Change one, change all three.
-BATCH_SCOPES = (("Mon – Wed", (0, 1, 2)), ("Thu – Fri", (3, 4)))
+# Spelled out, not a range: "Mon – Wed" reads as two days and hides Tuesday.
+BATCH_SCOPES = (("Mon + Tue + Wed", (0, 1, 2)), ("Thu + Fri", (3, 4)))
 DAY_SCOPES = (("Mon", (0,)), ("Tue", (1,)), ("Wed", (2,)), ("Thu", (3,)), ("Fri", (4,)))
 LOG_COLORS = {"OK": PROFIT, "ERROR": LOSS, "WARN": WARNING, "INFO": T_THIRD}
 
@@ -732,6 +733,7 @@ class MainWindow(QWidget):
         self.monday = None
         self._resize_edges = Qt.Edge(0)
         self._week_items: list[tuple[int, str, str]] = []
+        self.status_bar: QFrame | None = None  # the event filter checks it early
 
         self.setWindowTitle("MT5 to TradingView (Trade.LINK)")
         if ICON_PATH.exists():
@@ -792,6 +794,7 @@ class MainWindow(QWidget):
         col.setSpacing(0)
 
         self.title_bar = TitleBar(self)
+        self.title_bar.installEventFilter(self)  # drag from the empty strip too
         col.addWidget(self.title_bar)
 
         brand = QWidget()
@@ -826,7 +829,7 @@ class MainWindow(QWidget):
         name_row.addWidget(trade_lb)
         name_row.addWidget(link_lb)
         name_row.addStretch(1)
-        tagline = QLabel("Amplify → TradingView")
+        tagline = QLabel("MT5 → TradingView through an MCP agent")
         tagline.setFont(font(MONO, 10))
         tagline.setStyleSheet(f"color: {T_THIRD};")
         name_col.addLayout(name_row)
@@ -1052,6 +1055,10 @@ class MainWindow(QWidget):
         bar = QFrame()
         bar.setObjectName("statusBar")
         bar.setFixedHeight(38)
+        # The whole strip toggles the log, not just the little LOG control.
+        self.status_bar = bar
+        bar.setCursor(Qt.CursorShape.PointingHandCursor)
+        bar.installEventFilter(self)
         bar.setStyleSheet(
             f"#statusBar {{ background: {BAR}; border-top: 1px solid {EDGE};"
             f" border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }}"
@@ -1387,6 +1394,12 @@ class MainWindow(QWidget):
 
     # ── frameless window plumbing ────────────────────────────────────────────
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # noqa: N802 — Qt naming
+        if obj is self.status_bar:
+            if (event.type() == QEvent.Type.MouseButtonPress
+                    and event.button() == Qt.MouseButton.LeftButton):
+                self.toggle_drawer()
+                return True
+            return super().eventFilter(obj, event)
         if event.type() == QEvent.Type.MouseButtonPress:
             if event.button() == Qt.MouseButton.LeftButton and not self.isMaximized():
                 handle = self.windowHandle()
