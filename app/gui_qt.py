@@ -412,6 +412,40 @@ class RangePicker(QWidget):
         return self._segments[0][1], self._segments[0][2]
 
 
+class GrabAwareMenu(QMenu):
+    """A menu that shows the hand only where something is actually clickable.
+
+    An open menu holds the mouse grab, and the grab paints the cursor for the
+    whole screen — so a hand set on the menu bleeds over the entire app, and a
+    plain arrow lies about the options. Following the pointer instead keeps the
+    hand on the options and on the row that opened it, and hands the arrow back
+    everywhere else.
+    """
+
+    def __init__(self, owner: QWidget) -> None:
+        super().__init__(owner)
+        self._owner = owner
+        self.setMouseTracking(True)
+        self.setCursor(Qt.CursorShape.ArrowCursor)
+
+    def _clickable_at(self, global_pos: QPoint) -> bool:
+        if self.rect().contains(self.mapFromGlobal(global_pos)):
+            return True
+        owner = self._owner
+        return owner is not None and owner.rect().contains(owner.mapFromGlobal(global_pos))
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802 — Qt naming
+        hand = self._clickable_at(event.globalPosition().toPoint())
+        self.setCursor(Qt.CursorShape.PointingHandCursor if hand
+                       else Qt.CursorShape.ArrowCursor)
+        super().mouseMoveEvent(event)
+
+    def hideEvent(self, event) -> None:  # noqa: N802 — Qt naming
+        # Never let the grab's last cursor outlive the menu.
+        self.setCursor(Qt.CursorShape.ArrowCursor)
+        super().hideEvent(event)
+
+
 class WeekSelector(QFrame):
     """A 42px control row that opens the list of business weeks."""
 
@@ -480,11 +514,7 @@ class WeekSelector(QFrame):
         # leaving it shut.
         if monotonic() - self._menu_closed_at < 0.25:
             return
-        menu = QMenu(self)
-        # An open menu grabs the mouse, and the grab paints the cursor from the
-        # menu, not from whatever is under the pointer. Without this the row
-        # goes back to a plain arrow while it is still very much clickable.
-        menu.setCursor(Qt.CursorShape.PointingHandCursor)
+        menu = GrabAwareMenu(self)
         menu.setFont(font(SANS, 13))
         menu.setStyleSheet(
             f"QMenu {{ background: {CONTROL}; border: 1px solid {CTRL_EDGE};"
