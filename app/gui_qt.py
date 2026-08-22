@@ -118,6 +118,8 @@ MONO = ["Source Code Pro", "Cascadia Mono", "Consolas", "monospace"]
 GUTTER = 26
 SHADOW_PAD = 18  # transparent margin the drop shadow is painted into
 GRAB_BAND = 8  # how far outside the frame the resize grip reaches
+SCROLLBAR_W = 8  # width of the trade list scrollbar
+SCROLL_GUTTER = 12  # right gutter kept clear in the trade list, scrollbar or not
 
 # The day split lives here, in show_menu() in the engine, and in gui.py.
 # Change one, change all three.
@@ -479,6 +481,10 @@ class WeekSelector(QFrame):
         if monotonic() - self._menu_closed_at < 0.25:
             return
         menu = QMenu(self)
+        # An open menu grabs the mouse, and the grab paints the cursor from the
+        # menu, not from whatever is under the pointer. Without this the row
+        # goes back to a plain arrow while it is still very much clickable.
+        menu.setCursor(Qt.CursorShape.PointingHandCursor)
         menu.setFont(font(SANS, 13))
         menu.setStyleSheet(
             f"QMenu {{ background: {CONTROL}; border: 1px solid {CTRL_EDGE};"
@@ -733,7 +739,8 @@ class MainWindow(QWidget):
         self.monday = None
         self._resize_edges = Qt.Edge(0)
         self._week_items: list[tuple[int, str, str]] = []
-        self.status_bar: QFrame | None = None  # the event filter checks it early
+        self.status_bar: QFrame | None = None  # the event filter checks these
+        self.scroll: QScrollArea | None = None  # before the UI is fully built
 
         self.setWindowTitle("MT5 to TradingView (Trade.LINK)")
         if ICON_PATH.exists():
@@ -977,7 +984,9 @@ class MainWindow(QWidget):
 
         self.table_header = QWidget()
         head_row = QHBoxLayout(self.table_header)
-        head_row.setContentsMargins(0, 0, 4, 0)  # kept in step with the rows below
+        # The scrollbar gutter is reserved whether or not a scrollbar is showing,
+        # so the columns sit in the same place in every range.
+        head_row.setContentsMargins(0, 0, SCROLL_GUTTER, 0)
         head_row.setSpacing(0)
         self.table_header.setFixedHeight(26)
         day_cap = caption("Day")
@@ -992,7 +1001,7 @@ class MainWindow(QWidget):
 
         self.rows_host = QWidget()
         self.rows_layout = QVBoxLayout(self.rows_host)
-        self.rows_layout.setContentsMargins(0, 0, 4, 0)  # breathing room for the scrollbar
+        self.rows_layout.setContentsMargins(0, 0, SCROLL_GUTTER, 0)
         self.rows_layout.setSpacing(0)
         self.rows_layout.addStretch(1)
 
@@ -1010,6 +1019,10 @@ class MainWindow(QWidget):
             "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }"
             "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical"
             " { background: transparent; }")
+        # Show/Hide on the scrollbar is the only signal that tells us the
+        # viewport width changed at the moment it actually changes; polling
+        # isVisible() right after a refill reads the state we are leaving.
+        self.scroll.verticalScrollBar().installEventFilter(self)
         table_col.addWidget(self.scroll, 1)
 
         self.empty_state = EmptyState()
@@ -1337,12 +1350,20 @@ class MainWindow(QWidget):
         for record in records:
             self.rows_layout.insertWidget(self.rows_layout.count() - 1, TradeRow(record))
         self.scroll.verticalScrollBar().setValue(0)
-        QTimer.singleShot(0, self._sync_header_pad)
+        QTimer.singleShot(0, self._sync_rows_pad)
 
-    def _sync_header_pad(self) -> None:
-        """Keeps the header captions over their columns when a scrollbar appears."""
-        pad = 4 + (8 if self.scroll.verticalScrollBar().isVisible() else 0)
-        self.table_header.layout().setContentsMargins(0, 0, pad, 0)
+    def _sync_rows_pad(self) -> None:
+        self._apply_rows_pad(self.scroll.verticalScrollBar().isVisible())
+
+    def _apply_rows_pad(self, scrollbar_visible: bool) -> None:
+        """Holds the columns still when a scrollbar comes or goes.
+
+        A visible scrollbar narrows the viewport by its own width, so the rows
+        give back exactly that much padding and land where they always were —
+        under a header whose gutter never changes.
+        """
+        pad = SCROLL_GUTTER - (SCROLLBAR_W if scrollbar_visible else 0)
+        self.rows_layout.setContentsMargins(0, 0, pad, 0)
 
     # ── actions ──────────────────────────────────────────────────────────────
     def on_week_changed(self, weeks_back: int) -> None:
@@ -1394,6 +1415,10 @@ class MainWindow(QWidget):
 
     # ── frameless window plumbing ────────────────────────────────────────────
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # noqa: N802 — Qt naming
+        if self.scroll is not None and obj is self.scroll.verticalScrollBar():
+            if event.type() in (QEvent.Type.Show, QEvent.Type.Hide):
+                self._apply_rows_pad(event.type() == QEvent.Type.Show)
+            return super().eventFilter(obj, event)
         if obj is self.status_bar:
             if (event.type() == QEvent.Type.MouseButtonPress
                     and event.button() == Qt.MouseButton.LeftButton):
