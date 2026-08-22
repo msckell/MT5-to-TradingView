@@ -1,4 +1,4 @@
-# MT5 → TradingView Script
+# MT5 → TradingView (Trade.LINK)
 
 **Pull your closed XAU/USD trades out of MetaTrader 5 and draw them on a TradingView chart automatically — entry, exit, stop-loss and take-profit — through an MCP-powered drawing agent.**
 
@@ -101,7 +101,7 @@ The app icon ships in `assets/icon.ico` and the installer applies it to the shor
 
 ## Usage
 
-Open MetaTrader 5 and log in, then double-click the **MT5 to TradingView** shortcut created by the installer.
+Open MetaTrader 5 and log in, then double-click the **MT5 to TradingView (Trade.LINK)** shortcut created by the installer.
 
 Pick a week and a day range, click **Generate & copy prompt**. The trades show up in the table (entry, exit, side, P&L) and the drawing prompt lands on your clipboard. Open Claude Code, paste with `Ctrl+V`, press Enter — it verifies the chart and draws the trades.
 
@@ -117,7 +117,7 @@ python app/mt5_to_tradingview.py
 
 ```
 .
-├─ MT5 to TradingView.lnk   ← the launcher (created by tools/install.ps1)
+├─ MT5 to TradingView (Trade.LINK).lnk   ← the launcher (created by tools/install.ps1)
 ├─ app/
 │  ├─ gui.py                 desktop app — the main entry point
 │  └─ mt5_to_tradingview.py  the engine (also runnable as a console menu)
