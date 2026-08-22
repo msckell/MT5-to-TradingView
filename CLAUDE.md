@@ -1,4 +1,4 @@
-# CLAUDE.md — MT5 to TradingView
+# CLAUDE.md — MT5 to TradingView (Trade.LINK)
 
 > Doc de arranque de este repo. Cualquier sesión de IA que trabaje acá lee esto PRIMERO.
 
@@ -48,7 +48,7 @@ orientar a un agente de IA que va a tocar el código, no para explicar el produc
 
 ```
 .
-├─ MT5 to TradingView.lnk   ← launcher (lo crea tools/install.ps1, gitignored)
+├─ MT5 to TradingView (Trade.LINK).lnk   ← launcher (lo crea tools/install.ps1, gitignored)
 ├─ app/gui.py                app de escritorio — entry point principal
 ├─ app/mt5_to_tradingview.py el engine (además corre como menú de consola)
 ├─ mql5/SLTPLogger.mq5
@@ -63,7 +63,7 @@ El engine resuelve `config.json` desde la raíz del proyecto (`PROJECT_ROOT`), n
 
 ## Cómo se corre
 
-Doble clic en el acceso directo **MT5 to TradingView** (o `pythonw app/gui.py`). La GUI
+Doble clic en el acceso directo **MT5 to TradingView (Trade.LINK)** (o `pythonw app/gui.py`). La GUI
 es el ejecutor principal: elegís semana + rango de días, botón **Generate & copy
 prompt**, y el prompt queda en el clipboard. Requiere MT5 abierto y logueado, y el EA
 `SLTPLogger.mq5` corriendo si se quiere el SL/TP real (si no, cae a defaults de

@@ -28,7 +28,8 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $guiPath = Join-Path $root 'app\gui.py'
 $iconPath = Join-Path $root 'assets\icon.ico'
-$linkName = 'MT5 to TradingView.lnk'
+$linkName = 'MT5 to TradingView (Trade.LINK).lnk'
+$legacyLink = 'MT5 to TradingView.lnk'
 
 Write-Host ''
 Write-Host 'MT5 -> TradingView - setup' -ForegroundColor Cyan
@@ -81,9 +82,15 @@ function New-AppShortcut([string]$Destination) {
     $sc.TargetPath = $pythonw
     $sc.Arguments = '"{0}"' -f $guiPath
     $sc.WorkingDirectory = $root
-    $sc.Description = 'MT5 to TradingView - build the weekly drawing prompt'
+    $sc.Description = 'MT5 to TradingView (Trade.LINK) - build the weekly drawing prompt'
     if (Test-Path $iconPath) { $sc.IconLocation = $iconPath }
     $sc.Save()
+}
+
+# drop the pre-rename shortcut so only one launcher is left behind
+foreach ($dir in @($root, [Environment]::GetFolderPath('Desktop'))) {
+    $old = Join-Path $dir $legacyLink
+    if (Test-Path $old) { Remove-Item $old -Force; Write-Host ("[OK] Removed the old shortcut in " + $dir) -ForegroundColor Green }
 }
 
 $rootLink = Join-Path $root $linkName

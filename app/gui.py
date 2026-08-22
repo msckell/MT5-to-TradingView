@@ -1,5 +1,5 @@
 """
-MT5 -> TradingView — desktop app (main entry point).
+MT5 -> TradingView (Trade.LINK) — desktop app (main entry point).
 
 A Tkinter front-end over the same engine as the console fallback
 (mt5_to_tradingview.py). No extra dependencies — Tkinter ships with Python.
@@ -55,7 +55,7 @@ def _require_dependencies() -> None:
     root = tk.Tk()
     root.withdraw()
     messagebox.showerror(
-        "MT5 -> TradingView",
+        "MT5 to TradingView (Trade.LINK)",
         "Missing Python packages: " + ", ".join(missing) + "\n\n"
         "Run tools/install.ps1 (right-click -> Run with PowerShell), "
         "or install them manually:\n\n    pip install -r requirements.txt",
@@ -102,7 +102,7 @@ class MT5GUI:
         # module-global `log`, so reassigning it captures the whole pipeline).
         engine.log = self._engine_log
 
-        root.title("MT5 -> TradingView")
+        root.title("MT5 to TradingView (Trade.LINK)")
         root.configure(bg=BG)
         self.scale = max(1.0, root.winfo_fpixels("1i") / 96.0)
         root.geometry(f"{int(760 * self.scale)}x{int(720 * self.scale)}")
@@ -150,6 +150,8 @@ class MT5GUI:
         header.pack(fill="x", padx=16, pady=(14, 2))
         tk.Label(header, text="MT5  →  TradingView", bg=BG, fg=FG,
                  font=("Segoe UI Semibold", 15)).pack(side="left")
+        tk.Label(header, text="(Trade.LINK)", bg=BG, fg=MUTED,
+                 font=("Segoe UI", 10)).pack(side="left", padx=(7, 0), pady=(5, 0))
 
         pill = tk.Frame(header, bg=PANEL, padx=8, pady=3)
         pill.pack(side="right")
