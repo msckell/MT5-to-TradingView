@@ -85,7 +85,7 @@ A second, related quirk: the MCP's `draw_shape` returns `success` even when a li
 3. Attach `mql5/SLTPLogger.mq5` to a chart in MT5 (compile it in MetaEditor first). It starts logging SL/TP changes to the CSV.
 4. Set up the `tradingview-mcp` server in Claude Code following [its instructions](https://github.com/tradesdontlie/tradingview-mcp).
 
-To give the app its own icon, drop an `icon.ico` into `assets/` and re-run `tools/install.ps1` — the shortcut and the app window both pick it up.
+The app icon ships in `assets/icon.ico` and the installer applies it to the shortcut. It is generated from vector geometry by [`tools/make_logo.py`](tools/make_logo.py) — seven frames from 16 to 256 px, each drawn at its own size rather than downscaled — so if you change the mark, re-run that script and then `tools/install.ps1` to refresh the shortcut. See [`assets/README.md`](assets/README.md).
 
 ## Configuration
 
@@ -122,8 +122,10 @@ python app/mt5_to_tradingview.py
 │  ├─ gui.py                 desktop app — the main entry point
 │  └─ mt5_to_tradingview.py  the engine (also runnable as a console menu)
 ├─ mql5/SLTPLogger.mq5       Expert Advisor: logs live SL/TP to CSV
-├─ tools/install.ps1         deps + config + shortcut
-├─ assets/                   icon.ico goes here
+├─ tools/
+│  ├─ install.ps1            deps + config + shortcut
+│  └─ make_logo.py           redraws the icon and logos from vector geometry
+├─ assets/                   icon.ico + logo PNGs (see assets/README.md)
 ├─ config.example.json       copy to config.json (gitignored) and edit
 └─ requirements.txt
 ```
