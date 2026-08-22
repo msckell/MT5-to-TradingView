@@ -33,14 +33,16 @@ orientar a un agente de IA que va a tocar el código, no para explicar el produc
 
 ## Stack
 
-- **Python 3.10+** — `MetaTrader5`, `pytz`, `pyperclip` (ver `requirements.txt`).
+- **Python 3.10+** — `MetaTrader5`, `pytz`, `pyperclip`, `PySide6-Essentials` (ver
+  `requirements.txt`). Qt lo necesita solo `app/gui_qt.py`; el engine y la GUI vieja
+  de Tkinter corren sin él.
 - **`config.json`** (gitignored — cada máquina tiene el suyo, copiado de
   `config.example.json`). Nunca commitear `config.json` real ni el `sltp_log.csv`.
 - **MQL5** — `mql5/SLTPLogger.mq5`, Expert Advisor que corre en MT5 y loguea SL/TP en
   vivo (MT5 no retiene el SL original ni el TP final de una posición cerrada/trailed).
 - **PowerShell** — `tools/install.ps1`: instala deps, crea `config.json` si falta y
   genera el acceso directo `MT5 to TradingView.lnk` (gitignored: tiene paths de la
-  máquina) apuntando a `pythonw app/gui.py`, con `assets/icon.ico` como ícono.
+  máquina) apuntando a `pythonw app/gui_qt.py`, con `assets/icon.ico` como ícono.
 - **Node.js** — el MCP `tradingview-mcp` (`tradesdontlie/tradingview-mcp`, no vive en
   este repo) es quien efectivamente dibuja en TradingView vía CDP.
 
@@ -49,33 +51,45 @@ orientar a un agente de IA que va a tocar el código, no para explicar el produc
 ```
 .
 ├─ MT5 to TradingView (Trade.LINK).lnk   ← launcher (lo crea tools/install.ps1, gitignored)
-├─ app/gui.py                app de escritorio — entry point principal
+├─ app/gui_qt.py             app de escritorio (Qt) — entry point principal
+├─ app/gui.py                GUI vieja de Tkinter — fallback sin dependencias
 ├─ app/mt5_to_tradingview.py el engine (además corre como menú de consola)
 ├─ mql5/SLTPLogger.mq5
-├─ tools/install.ps1
-├─ assets/                   acá va icon.ico
+├─ tools/install.ps1 · tools/make_logo.py
+├─ docs/design/              el design canvas del que sale la GUI Qt
+├─ assets/                   icon.ico + logo-wide.png / logo-icon.png
 └─ config.example.json · requirements.txt · README.md · LICENSE
 ```
 
 El engine resuelve `config.json` desde la raíz del proyecto (`PROJECT_ROOT`), no desde
 `app/`. Si se mueven archivos, revisar `SCRIPT_DIR` / `PROJECT_ROOT` en
-`app/mt5_to_tradingview.py` y `ICON_PATH` en `app/gui.py`.
+`app/mt5_to_tradingview.py` y `ASSETS` / `ICON_PATH` en `app/gui_qt.py` y `app/gui.py`.
 
 ## Cómo se corre
 
-Doble clic en el acceso directo **MT5 to TradingView (Trade.LINK)** (o `pythonw app/gui.py`). La GUI
-es el ejecutor principal: elegís semana + rango de días, botón **Generate & copy
-prompt**, y el prompt queda en el clipboard. Requiere MT5 abierto y logueado, y el EA
-`SLTPLogger.mq5` corriendo si se quiere el SL/TP real (si no, cae a defaults de
-`config.json`).
+Doble clic en el acceso directo **MT5 to TradingView (Trade.LINK)** (o
+`pythonw app/gui_qt.py`). La app Qt es el ejecutor principal: elegís semana + rango de
+días, botón **Generate & copy prompt**, y el prompt queda en el clipboard. Requiere MT5
+abierto y logueado, y el EA `SLTPLogger.mq5` corriendo si se quiere el SL/TP real (si
+no, cae a defaults de `config.json`).
 
-Fallback de consola: `python app/mt5_to_tradingview.py` abre el menú interactivo de
-siempre. Se mantiene a propósito — no borrarlo sin que el trader lo pida.
+A diferencia de la GUI vieja, la Qt **carga la semana al elegirla** (no al generar): los
+segmentos de rango filtran en memoria, sin volver a pegarle a MT5.
 
-**Cuidado con la desincronización GUI ↔ engine.** El split de días vive en dos lados:
-`show_menu()` en el engine y `SCOPE_BATCHES` / `_scope_filter()` en `app/gui.py`. Si se
-cambia uno, cambiar el otro (ya pasó una vez: la GUI quedó en Mon+Tue / Wed+Thu+Fri
-cuando el engine ya usaba Mon+Tue+Wed / Thu+Fri).
+Fallbacks: `pythonw app/gui.py` (la GUI vieja de Tkinter, sin dependencias más allá de
+Python) y `python app/mt5_to_tradingview.py` (menú de consola). Los dos se mantienen a
+propósito — no borrarlos sin que el trader lo pida.
+
+**Cuidado con la desincronización GUI ↔ engine.** El split de días vive en TRES lados:
+`show_menu()` en el engine, `SCOPE_BATCHES` / `_scope_filter()` en `app/gui.py`, y
+`BATCH_SCOPES` / `DAY_SCOPES` en `app/gui_qt.py`. Si se cambia uno, cambiar los tres (ya
+pasó una vez: la GUI quedó en Mon+Tue / Wed+Thu+Fri cuando el engine ya usaba
+Mon+Tue+Wed / Thu+Fri).
+
+**La GUI Qt no toca MT5 en el hilo principal.** Todo pasa por `EngineWorker` en su
+propio `QThread` y vuelve por señales; `engine.log` se reapunta a una señal para que
+todo el pipeline caiga en el drawer de log. Si agregás una llamada a MT5, va como slot
+del worker, no en el handler del botón.
 
 ## Reglas duras
 

@@ -1,0 +1,39 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Design" },
+    { "id": "page-2", "name": "Before" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Trade.LINK", "page": "page-1", "x": 0, "y": 0, "w": 960, "h": 720 },
+    { "file": "Tokens.dc.html", "title": "Tokens", "page": "page-1", "x": 1040, "y": 0, "w": 820, "h": 780 },
+    { "file": "States.dc.html", "title": "States", "page": "page-1", "x": 0, "y": 920, "w": 1180, "h": 560 },
+    { "file": "Current.dc.html", "title": "Today's app", "page": "page-2", "x": 0, "y": 0, "w": 760, "h": 752 }
+  ],
+  "annotations": [
+    {
+      "id": "note-main",
+      "page": "page-1",
+      "x": 0,
+      "y": -190,
+      "w": 940,
+      "text": "Source Sans 3 + Source Code Pro, and the new mark in the header — small, as asked, with the Trade.LINK wordmark beside it.\n\nThe logo is redrawn as vector geometry traced from your artwork: ring centres, hole diameters, node sizes and stroke width all match the original to the pixel, so it stays sharp at any size instead of being an upscaled bitmap."
+    },
+    {
+      "id": "note-states",
+      "page": "page-1",
+      "x": 0,
+      "y": 820,
+      "w": 900,
+      "text": "States. The status light survives only where it reports a real condition — the MT5 connection. \"Prompt copied\" is an event, so it gets a check mark and no lamp."
+    },
+    {
+      "id": "note-before",
+      "page": "page-2",
+      "x": 0,
+      "y": -150,
+      "w": 740,
+      "text": "The app as it stands today, drawn from the real source values — kept for comparison."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

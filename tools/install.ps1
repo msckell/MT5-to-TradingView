@@ -26,7 +26,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
-$guiPath = Join-Path $root 'app\gui.py'
+$guiPath = Join-Path $root 'app\gui_qt.py'
 $iconPath = Join-Path $root 'assets\icon.ico'
 $linkName = 'MT5 to TradingView (Trade.LINK).lnk'
 $legacyLink = 'MT5 to TradingView.lnk'
