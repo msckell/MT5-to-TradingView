@@ -116,7 +116,7 @@ MONO = ["Source Code Pro", "Cascadia Mono", "Consolas", "monospace"]
 
 GUTTER = 26
 SHADOW_PAD = 18  # transparent margin the drop shadow is painted into
-RESIZE_EDGE = 6  # grab band for frameless resizing
+GRAB_BAND = 8  # how far outside the frame the resize grip reaches
 
 # The day split lives here, in show_menu() in the engine, and in gui.py.
 # Change one, change all three.
@@ -742,6 +742,9 @@ class MainWindow(QWidget):
 
         self.shell = QFrame()
         self.shell.setObjectName("shell")
+        # Anchors the arrow for everything inside, so a grip cursor set on the
+        # window can never be inherited by the content.
+        self.shell.setCursor(Qt.CursorShape.ArrowCursor)
         self.shell.setStyleSheet(
             f"#shell {{ background: {WINDOW}; border: 1px solid {EDGE}; border-radius: 8px; }}")
         shadow = QGraphicsDropShadowEffect(self)
@@ -1380,17 +1383,25 @@ class MainWindow(QWidget):
         return super().eventFilter(obj, event)
 
     def _edges_at(self, pos: QPoint) -> int:
+        """Which edges the pointer can grab: a thin ring just outside the frame.
+
+        Only the ring counts. Inside the frame is the app, and the rest of the
+        transparent shadow margin is dead space — neither may show a resize grip.
+        """
         if self.isMaximized():
             return 0
         rect = self.shell.geometry()
+        band = rect.adjusted(-GRAB_BAND, -GRAB_BAND, GRAB_BAND, GRAB_BAND)
+        if rect.contains(pos) or not band.contains(pos):
+            return 0
         edges = 0
-        if pos.x() <= rect.left() + RESIZE_EDGE:
+        if pos.x() < rect.left():
             edges |= Qt.Edge.LeftEdge.value
-        elif pos.x() >= rect.right() - RESIZE_EDGE:
+        elif pos.x() > rect.right():
             edges |= Qt.Edge.RightEdge.value
-        if pos.y() <= rect.top() + RESIZE_EDGE:
+        if pos.y() < rect.top():
             edges |= Qt.Edge.TopEdge.value
-        elif pos.y() >= rect.bottom() - RESIZE_EDGE:
+        elif pos.y() > rect.bottom():
             edges |= Qt.Edge.BottomEdge.value
         return edges
 
@@ -1407,9 +1418,20 @@ class MainWindow(QWidget):
         elif edges in (top, bottom):
             cursor = Qt.CursorShape.SizeVerCursor
         else:
-            cursor = Qt.CursorShape.ArrowCursor
-        self.setCursor(cursor)
+            cursor = None
+        # unsetCursor, never setCursor(Arrow): an explicit cursor here is
+        # inherited by every child that has none of its own.
+        if cursor is None:
+            self.unsetCursor()
+        else:
+            self.setCursor(cursor)
         super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event: QEvent) -> None:  # noqa: N802 — Qt naming
+        # Qt sends Leave when the pointer crosses onto a child, which is exactly
+        # when a grip cursor would otherwise be left behind over the whole app.
+        self.unsetCursor()
+        super().leaveEvent(event)
 
     def mousePressEvent(self, event) -> None:  # noqa: N802 — Qt naming
         if event.button() == Qt.MouseButton.LeftButton:
