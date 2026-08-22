@@ -36,17 +36,46 @@ orientar a un agente de IA que va a tocar el código, no para explicar el produc
 - **Python 3.10+** — `MetaTrader5`, `pytz`, `pyperclip` (ver `requirements.txt`).
 - **`config.json`** (gitignored — cada máquina tiene el suyo, copiado de
   `config.example.json`). Nunca commitear `config.json` real ni el `sltp_log.csv`.
-- **MQL5** — `SLTPLogger.mq5`, Expert Advisor que corre en MT5 y loguea SL/TP en vivo
-  (MT5 no retiene el SL original ni el TP final de una posición cerrada/trailed).
+- **MQL5** — `mql5/SLTPLogger.mq5`, Expert Advisor que corre en MT5 y loguea SL/TP en
+  vivo (MT5 no retiene el SL original ni el TP final de una posición cerrada/trailed).
+- **PowerShell** — `tools/install.ps1`: instala deps, crea `config.json` si falta y
+  genera el acceso directo `MT5 to TradingView.lnk` (gitignored: tiene paths de la
+  máquina) apuntando a `pythonw app/gui.py`, con `assets/icon.ico` como ícono.
 - **Node.js** — el MCP `tradingview-mcp` (`tradesdontlie/tradingview-mcp`, no vive en
   este repo) es quien efectivamente dibuja en TradingView vía CDP.
 
+## Estructura
+
+```
+.
+├─ MT5 to TradingView.lnk   ← launcher (lo crea tools/install.ps1, gitignored)
+├─ app/gui.py                app de escritorio — entry point principal
+├─ app/mt5_to_tradingview.py el engine (además corre como menú de consola)
+├─ mql5/SLTPLogger.mq5
+├─ tools/install.ps1
+├─ assets/                   acá va icon.ico
+└─ config.example.json · requirements.txt · README.md · LICENSE
+```
+
+El engine resuelve `config.json` desde la raíz del proyecto (`PROJECT_ROOT`), no desde
+`app/`. Si se mueven archivos, revisar `SCRIPT_DIR` / `PROJECT_ROOT` en
+`app/mt5_to_tradingview.py` y `ICON_PATH` en `app/gui.py`.
+
 ## Cómo se corre
 
-`Run Terminal.bat` (chequea/instala deps y corre `mt5_to_tradingview.py`) o
-`python mt5_to_tradingview.py` directo. Requiere MT5 abierto y logueado, y el EA
+Doble clic en el acceso directo **MT5 to TradingView** (o `pythonw app/gui.py`). La GUI
+es el ejecutor principal: elegís semana + rango de días, botón **Generate & copy
+prompt**, y el prompt queda en el clipboard. Requiere MT5 abierto y logueado, y el EA
 `SLTPLogger.mq5` corriendo si se quiere el SL/TP real (si no, cae a defaults de
 `config.json`).
+
+Fallback de consola: `python app/mt5_to_tradingview.py` abre el menú interactivo de
+siempre. Se mantiene a propósito — no borrarlo sin que el trader lo pida.
+
+**Cuidado con la desincronización GUI ↔ engine.** El split de días vive en dos lados:
+`show_menu()` en el engine y `SCOPE_BATCHES` / `_scope_filter()` en `app/gui.py`. Si se
+cambia uno, cambiar el otro (ya pasó una vez: la GUI quedó en Mon+Tue / Wed+Thu+Fri
+cuando el engine ya usaba Mon+Tue+Wed / Thu+Fri).
 
 ## Reglas duras
 

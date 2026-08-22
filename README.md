@@ -21,15 +21,15 @@ That limitation is why this project has two halves: a small **Expert Advisor** t
 ```mermaid
 flowchart LR
     A[MetaTrader 5<br/>closed deals] --> B[SLTPLogger.mq5<br/>logs SL/TP → CSV]
-    A --> C[mt5_to_tradingview.py]
+    A --> C[app/mt5_to_tradingview.py]
     B --> C
     C -->|pairs deals · resolves SL/TP·<br/>converts timezones| D[Structured prompt<br/>copied to clipboard]
     D --> E[Claude Code<br/>+ TradingView MCP]
     E -->|draw_shape| F[TradingView chart<br/>entry · exit · SL · TP]
 ```
 
-1. **An Expert Advisor (`SLTPLogger.mq5`)** runs on the MT5 chart and appends every stop-loss / take-profit change to a CSV, keyed by `position_id`. MT5's deal history doesn't retain the *original* SL once a position is closed, so this log is what lets the tool recover the real risk levels afterwards.
-2. **`mt5_to_tradingview.py`** connects to the terminal, fetches the closed XAU/USD deals for the chosen business week, and pairs entry/exit deals into complete trades. For each one it resolves the entry, exit, SL and TP (falling back to configurable defaults when the log has no row), and computes an optional "exit line".
+1. **An Expert Advisor (`mql5/SLTPLogger.mq5`)** runs on the MT5 chart and appends every stop-loss / take-profit change to a CSV, keyed by `position_id`. MT5's deal history doesn't retain the *original* SL once a position is closed, so this log is what lets the tool recover the real risk levels afterwards.
+2. **`app/mt5_to_tradingview.py`** connects to the terminal, fetches the closed XAU/USD deals for the chosen business week, and pairs entry/exit deals into complete trades. For each one it resolves the entry, exit, SL and TP (falling back to configurable defaults when the log has no row), and computes an optional "exit line".
 3. **Timestamps** are the tricky part. MT5 encodes deal times as server-local time labelled as UTC. The tool auto-detects the broker's GMT offset (calendar-based EET/EEST heuristic, cross-checked against a live tick) and converts everything to true Unix **seconds** UTC — the unit the TradingView MCP's `draw_shape` expects.
 4. **The result is a structured prompt** copied to the clipboard (with a Notepad fallback). You paste it into Claude Code (the recommended client), which has the TradingView MCP active, and it draws the positions on the chart.
 
@@ -59,7 +59,7 @@ The actual on-chart drawing is done by the **[`tradingview-mcp`](https://github.
 
 ## Why the batching (a real gotcha worth knowing)
 
-TradingView only accepts and renders drawings for candles that are **inside the current viewport**. At the 1-minute timeframe only ~5 days of candles fit on screen, so a whole week can't be drawn in one shot — off-screen lines are silently dropped. The tool works around this by pushing trades in small batches (e.g. the first 2 days, then the next 3) that stay within what's visible.
+TradingView only accepts and renders drawings for candles that are **inside the current viewport**. At the 1-minute timeframe only ~5 days of candles fit on screen, so a whole week can't be drawn in one shot — off-screen lines are silently dropped. The tool works around this by pushing trades in small batches (e.g. Mon+Tue+Wed, then Thu+Fri) that stay within what's visible.
 
 A second, related quirk: the MCP's `draw_shape` returns `success` even when a line didn't actually land, and TradingView drops drawings when it receives too many at once (~16 in parallel fails; ≤6 per batch is reliable). The generated prompt instructs the agent to draw **sequentially in small batches** rather than trusting the `success` response.
 
@@ -70,14 +70,22 @@ A second, related quirk: the MCP's `draw_shape` returns `success` even when a li
 - Python packages: see [`requirements.txt`](requirements.txt) — `MetaTrader5`, `pytz`, `pyperclip`
 - [Claude Code](https://claude.com/claude-code) **(recommended)** with the [`tradingview-mcp`](https://github.com/tradesdontlie/tradingview-mcp) server configured — or any MCP-capable client that can run that server and follow the drawing prompt
 - The TradingView desktop app
-- The `SLTPLogger.mq5` Expert Advisor attached and running in the MT5 desktop app while you trade (see [Why the Expert Advisor](#why-the-expert-advisor-and-what-you-need-to-run-it))
+- The `mql5/SLTPLogger.mq5` Expert Advisor attached and running in the MT5 desktop app while you trade (see [Why the Expert Advisor](#why-the-expert-advisor-and-what-you-need-to-run-it))
 
 ## Setup
 
-1. Copy `config.example.json` to `config.json` and edit the paths/symbols for your setup (in particular `sltp_log_path`, which points at your MT5 `Common\Files\sltp_log.csv`).
-2. Attach `SLTPLogger.mq5` to a chart in MT5 (compile it in MetaEditor first). It starts logging SL/TP changes to the CSV.
-3. Install the Python dependencies: `pip install -r requirements.txt`.
+1. Run the installer once — it installs the Python dependencies, creates `config.json` from the example, and builds the desktop shortcut that launches the app:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File tools\install.ps1
+   ```
+
+   Add `-Desktop` to drop a copy of the shortcut on your Desktop.
+2. Edit `config.json` for your setup — in particular `sltp_log_path`, which points at your MT5 `Common\Files\sltp_log.csv`.
+3. Attach `mql5/SLTPLogger.mq5` to a chart in MT5 (compile it in MetaEditor first). It starts logging SL/TP changes to the CSV.
 4. Set up the `tradingview-mcp` server in Claude Code following [its instructions](https://github.com/tradesdontlie/tradingview-mcp).
+
+To give the app its own icon, drop an `icon.ico` into `assets/` and re-run `tools/install.ps1` — the shortcut and the app window both pick it up.
 
 ## Configuration
 
@@ -93,17 +101,36 @@ A second, related quirk: the MCP's `draw_shape` returns `success` even when a li
 
 ## Usage
 
+Open MetaTrader 5 and log in, then double-click the **MT5 to TradingView** shortcut created by the installer.
+
+Pick a week and a day range, click **Generate & copy prompt**. The trades show up in the table (entry, exit, side, P&L) and the drawing prompt lands on your clipboard. Open Claude Code, paste with `Ctrl+V`, press Enter — it verifies the chart and draws the trades.
+
+The GUI is plain Tkinter, which ships with Python — no extra dependencies.
+
+**Console fallback.** The same engine still has its interactive menu if you ever need it (or want to script around it):
+
 ```bash
-python mt5_to_tradingview.py
+python app/mt5_to_tradingview.py
 ```
 
-Or double-click `Run Terminal.bat` (it checks/installs deps, then runs the script). Pick the week or day range from the menu; the prompt is generated and copied to your clipboard. Open Claude Code, paste with `Ctrl+V`, and press Enter — it verifies the chart and draws the trades.
+## Project layout
 
-**Prefer a window?** Run `python gui.py` (or double-click `Run App.bat`) for a lightweight desktop GUI over the same engine — pick a week and range from dropdowns, click **Generate & copy prompt**, and paste into Claude Code. The console version stays the default; the GUI is just a friendlier door. No extra dependencies (Tkinter ships with Python).
+```
+.
+├─ MT5 to TradingView.lnk   ← the launcher (created by tools/install.ps1)
+├─ app/
+│  ├─ gui.py                 desktop app — the main entry point
+│  └─ mt5_to_tradingview.py  the engine (also runnable as a console menu)
+├─ mql5/SLTPLogger.mq5       Expert Advisor: logs live SL/TP to CSV
+├─ tools/install.ps1         deps + config + shortcut
+├─ assets/                   icon.ico goes here
+├─ config.example.json       copy to config.json (gitignored) and edit
+└─ requirements.txt
+```
 
 ## Design notes
 
-- **Separation of concerns.** The data engine (fetch, pair, resolve SL/TP, convert time, build prompt) is fully decoupled from the CLI menu, so a GUI could replace the console layer without touching the core.
+- **Separation of concerns.** The data engine (fetch, pair, resolve SL/TP, convert time, build prompt) is fully decoupled from the CLI menu, which is exactly why the GUI could take over as the main entry point without the core changing at all.
 - **Robust timezone detection.** The broker offset is anchored on a calendar heuristic and only *cross-checked* against the live tick (which depends on the PC clock and can lie) — never trusted blindly. A `server_offset_override` in config wins unconditionally.
 - **Atomic, retry-safe CSV cleanup.** Old cache rows are pruned with a tempfile + atomic replace, retried if the EA briefly holds the file open.
 
@@ -115,4 +142,4 @@ Or double-click `Run Terminal.bat` (it checks/installs deps, then runs the scrip
 ## Credits
 
 - **TradingView drawing/automation** — the [`tradingview-mcp`](https://github.com/tradesdontlie/tradingview-mcp) server by [tradesdontlie](https://github.com/tradesdontlie). All on-chart drawing is done by their MCP; this project does not reimplement any of it.
-- **MT5 → prompt pipeline, the `SLTPLogger.mq5` Expert Advisor, and the CLI/GUI** — built for this project.
+- **MT5 → prompt pipeline, the `SLTPLogger.mq5` Expert Advisor, and the desktop app** — built for this project.

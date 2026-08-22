@@ -11,7 +11,7 @@ The on-chart drawing is done by the tradingview-mcp server by tradesdontlie
 MT5 -> prompt half of the pipeline.
 
 Usage:
-    python mt5_to_tradingview.py
+    python app/mt5_to_tradingview.py   (console menu; the GUI is the main entry point)
 """
 
 from __future__ import annotations
@@ -45,8 +45,14 @@ except ImportError:
 # Constants
 # ----------------------------------------------------------------------
 SCRIPT_DIR = Path(__file__).resolve().parent
-CONFIG_PATH = SCRIPT_DIR / "config.json"
-FALLBACK_PROMPT_PATH = SCRIPT_DIR / "prompt_clipboard.txt"
+PROJECT_ROOT = SCRIPT_DIR.parent  # code lives in app/, config and docs at the root
+# config.json lives at the project root; fall back to next-to-the-script so an
+# older flat layout keeps working.
+CONFIG_PATH = next(
+    (c for c in (PROJECT_ROOT / "config.json", SCRIPT_DIR / "config.json") if c.exists()),
+    PROJECT_ROOT / "config.json",
+)
+FALLBACK_PROMPT_PATH = PROJECT_ROOT / "prompt_clipboard.txt"
 
 UTC_TZ = pytz.UTC
 SECONDS_PER_HOUR = 3600
@@ -1104,7 +1110,7 @@ def build_prompt(filtered: list[dict[str, Any]], config: dict[str, Any]) -> str:
 def copy_to_clipboard(text: str) -> bool:
     """Copies the prompt to the clipboard. If it fails, saves it to a file and opens it in Notepad."""
     try:
-        import pyperclip  # deferred import: the .bat installs it if missing
+        import pyperclip  # deferred import: tools/install.ps1 installs it if missing
         pyperclip.copy(text)
         return True
     except ImportError:
