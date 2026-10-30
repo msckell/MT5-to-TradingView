@@ -91,7 +91,6 @@ class MT5GUI:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.connected = False
-        self.server_offset = 0
         self.config: dict | None = None
         self.user_tz = None
         self.symbol = ""
@@ -337,10 +336,9 @@ class MT5GUI:
             return
         try:
             engine.mt5.symbol_select(self.symbol, True)
-            self.server_offset = engine.detect_server_offset(self.symbol, self.config)
+            engine.detect_server_offset(self.symbol, self.config)  # logs + tick cross-check
         except Exception as exc:  # noqa: BLE001
             self._append(f"[WARN] offset detection: {exc}", "WARN")
-            self.server_offset = 0
         self.connected = True
         self._set_pill(f"MT5 · {self.symbol}", ok=True)
         self._set_footer("Connected. Pick a week and generate.", ok=True)
@@ -391,8 +389,8 @@ class MT5GUI:
                 self._set_footer("No closed trades in that range.", ok=False)
                 return
             cache = engine.load_sltp_cache(self.config.get("sltp_log_path", ""))
-            records = engine.build_trade_records(trades_raw, self.server_offset,
-                                                 self.user_tz, self.config, sltp_cache=cache)
+            records = engine.build_trade_records(trades_raw, self.user_tz, self.config,
+                                                 sltp_cache=cache)
             week_records = engine.filter_to_business_week(records, monday, friday)
             engine.assign_indices_and_log(week_records, self.config)
             filtered, scope = self._scope_filter(week_records, monday)
@@ -428,7 +426,7 @@ class MT5GUI:
             self._set_footer("Not connected to MT5.", ok=False)
             return
         path = self.config.get("sltp_log_path", "")
-        kept, deleted = engine.clean_old_sltp_cache(path, self.user_tz, self.server_offset)
+        kept, deleted = engine.clean_old_sltp_cache(path, self.user_tz, self.config)
         if kept < 0:
             self._set_footer("Cache cleanup failed — see the log.", ok=False)
         else:

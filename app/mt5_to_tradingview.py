@@ -20,7 +20,6 @@ import json
 import os
 import sys
 import time as _time
-from calendar import monthrange
 from datetime import date, datetime, time as dtime, timedelta
 from pathlib import Path
 from typing import Any, Optional
@@ -55,9 +54,9 @@ CONFIG_PATH = next(
 FALLBACK_PROMPT_PATH = PROJECT_ROOT / "prompt_clipboard.txt"
 
 UTC_TZ = pytz.UTC
+NY_TZ = pytz.timezone("America/New_York")  # ICMarkets server clock = NY + 7h
 SECONDS_PER_HOUR = 3600
 TICK_RECENT_THRESHOLD_SEC = 600  # 10 min: si el ultimo tick es mas viejo, mercado cerrado
-DEFAULT_SERVER_OFFSET_FALLBACK = 3
 WEEK_FETCH_BUFFER_DAYS = 3
 WEEKDAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
@@ -133,7 +132,7 @@ def load_sltp_cache(csv_path: str) -> dict[int, dict[str, float]]:
 def clean_old_sltp_cache(
     csv_path: str,
     user_tz: pytz.BaseTzInfo,
-    server_offset_h: int,
+    config: dict[str, Any],
 ) -> tuple[int, int]:
     """
     Removes all rows in sltp_log.csv with timestamp BEFORE Monday 00:00
@@ -157,7 +156,7 @@ def clean_old_sltp_cache(
     monday_start, _ = get_business_week_range(user_tz, weeks_back=0)
     monday_utc_ms = int(monday_start.timestamp() * 1000)
     # EA writes ts in server-local-as-UTC, so cutoff in same domain:
-    cutoff_server_ms = monday_utc_ms + server_offset_h * 3600 * 1000
+    cutoff_server_ms = monday_utc_ms + server_offset_at(monday_start, config) * 3600 * 1000
 
     kept_lines: list[str] = []
     deleted_count = 0
@@ -228,7 +227,7 @@ def clean_old_sltp_cache(
 def prompt_clean_cache(
     csv_path: str,
     user_tz: pytz.BaseTzInfo,
-    server_offset_h: int,
+    config: dict[str, Any],
 ) -> None:
     """
     Interactive flow for [C] menu option. Shows preview, asks confirmation,
@@ -244,7 +243,7 @@ def prompt_clean_cache(
     # Count rows that would be deleted (dry run)
     monday_start, _ = get_business_week_range(user_tz, weeks_back=0)
     monday_utc_ms = int(monday_start.timestamp() * 1000)
-    cutoff_server_ms = monday_utc_ms + server_offset_h * 3600 * 1000
+    cutoff_server_ms = monday_utc_ms + server_offset_at(monday_start, config) * 3600 * 1000
 
     total = 0
     to_delete = 0
@@ -298,7 +297,7 @@ def prompt_clean_cache(
         log("INFO", "Cleanup canceled.")
         return
 
-    kept, deleted = clean_old_sltp_cache(csv_path, user_tz, server_offset_h)
+    kept, deleted = clean_old_sltp_cache(csv_path, user_tz, config)
     if kept < 0:
         log("ERROR", "Cleanup failed. Check that the EA is not locking the file.")
     else:
@@ -350,31 +349,25 @@ def connect_mt5() -> bool:
 # ----------------------------------------------------------------------
 # MT5 server timezone detection
 # ----------------------------------------------------------------------
-def _last_sunday_of_month(year: int, month: int) -> date:
-    """Returns the last Sunday of the given month/year."""
-    last_day = monthrange(year, month)[1]
-    d = date(year, month, last_day)
-    while d.weekday() != 6:  # 6 = Sunday
-        d -= timedelta(days=1)
-    return d
+def _calendar_server_offset(utc_dt: datetime) -> int:
+    """ICMarkets server clock = New York time + 7h (the 17:00 NY close is 00:00 server).
 
-
-def _heuristic_server_offset(now_utc: datetime) -> int:
-    """European heuristic (EET/EEST): summer (last Sun Mar - last Sun Oct) -> GMT+3, winter -> GMT+2.
-
-    ICMarkets and most European MT5 brokers use EET:
-      Summer (DST active): UTC+3
-      Winter:              UTC+2
-    Note: summer maps to the LARGER offset (+3); flipping these two silently
-    shifts every drawing by one hour, so keep the DST direction straight.
+    So it follows the US DST calendar, NOT the European one:
+      New York on DST (2nd Sun Mar - 1st Sun Nov): UTC+3
+      Otherwise:                                   UTC+2
+    The European calendar (last Sun Mar - last Sun Oct) is wrong for ~3 weeks in
+    March and 1 week in Oct/Nov, and shifts every drawing by one hour there
+    (diagnosed 2026-10-30 on trades of 26-28/10).
     """
-    year = now_utc.year
-    last_sun_mar = _last_sunday_of_month(year, 3)
-    last_sun_oct = _last_sunday_of_month(year, 10)
-    today_utc = now_utc.date()
-    if last_sun_mar <= today_utc < last_sun_oct:
-        return 3  # summer EET+DST = GMT+3
-    return 2  # winter EET = GMT+2
+    return 3 if utc_dt.astimezone(NY_TZ).dst() else 2
+
+
+def server_offset_at(utc_dt: datetime, config: dict[str, Any]) -> int:
+    """Server GMT offset in effect at utc_dt. server_offset_override wins unconditionally."""
+    override = config.get("server_offset_override")
+    if override is not None:
+        return int(override)
+    return _calendar_server_offset(utc_dt)
 
 
 def _dynamic_offset_from_tick(symbol: str) -> Optional[int]:
@@ -407,13 +400,16 @@ def _dynamic_offset_from_tick(symbol: str) -> Optional[int]:
 
 
 def detect_server_offset(symbol: str, config: dict[str, Any]) -> int:
-    """Determines the MT5 server's GMT offset robustly and self-verifiably.
+    """Logs the MT5 server's current GMT offset and cross-checks it against the live tick.
+
+    Trades are NOT converted with this value: each deal uses server_offset_at() for
+    its own date, so a week that spans a DST switch still lands right.
 
     Hierarchy:
       1. server_offset_override in config (if not None): wins unconditionally.
-      2. EET/EEST calendar heuristic: a known-good anchor for ICMarkets.
-      3. Cross-check against the live tick. If it matches the heuristic -> high
-         confidence. If it DISAGREES -> warn with WARN and use the heuristic, since
+      2. US-DST calendar (server = New York + 7h): the anchor for ICMarkets.
+      3. Cross-check against the live tick. If it matches the calendar -> high
+         confidence. If it DISAGREES -> warn with WARN and keep the calendar, since
          the tick depends on the PC clock and can lie without detection.
     """
     override = config.get("server_offset_override")
@@ -421,43 +417,41 @@ def detect_server_offset(symbol: str, config: dict[str, Any]) -> int:
         log("INFO", f"Offset FORCED by config (server_offset_override): GMT+{override}")
         return int(override)
 
-    now_utc = datetime.now(UTC_TZ)
-    try:
-        heuristic = _heuristic_server_offset(now_utc)
-    except Exception as e:
-        log("WARN", f"Heuristic failed ({e}). Default GMT+{DEFAULT_SERVER_OFFSET_FALLBACK}")
-        heuristic = DEFAULT_SERVER_OFFSET_FALLBACK
-
+    calendar = _calendar_server_offset(datetime.now(UTC_TZ))
     dynamic = _dynamic_offset_from_tick(symbol)
 
     if dynamic is None:
-        log("INFO", f"Offset from calendar (no live tick): GMT+{heuristic}")
-        return heuristic
+        log("INFO", f"Offset from calendar (no live tick): GMT+{calendar}")
+        return calendar
 
-    if dynamic == heuristic:
-        log("INFO", f"Offset confirmed GMT+{heuristic} (calendar and tick agree)")
-        return heuristic
+    if dynamic == calendar:
+        log("INFO", f"Offset confirmed GMT+{calendar} (calendar and tick agree)")
+        return calendar
 
     log(
         "WARN",
         f"offset MISMATCH: live tick says GMT+{dynamic} but calendar "
-        f"says GMT+{heuristic}. Using calendar GMT+{heuristic}. If your broker is NOT "
-        f"EET/EEST or the PC clock is off, check the PC time or set "
+        f"says GMT+{calendar}. Using calendar GMT+{calendar}. If your broker's clock is NOT "
+        f"New York + 7h or the PC clock is off, check the PC time or set "
         f'"server_offset_override" in config.json.',
     )
-    return heuristic
+    return calendar
 
 
 # ----------------------------------------------------------------------
 # Timestamp conversion
 # ----------------------------------------------------------------------
-def server_msc_to_utc_ms(deal_time_msc: int, server_offset_h: int) -> int:
+def server_msc_to_utc_ms(deal_time_msc: int, config: dict[str, Any]) -> int:
     """deal.time_msc (server-local-as-UTC, ms) -> real Unix ms UTC.
 
     MT5 returns ms since epoch, but the value represents server time encoded as
-    if it were UTC. To get real UTC you must subtract the server offset.
+    if it were UTC. To get real UTC you must subtract the server offset in effect
+    on that deal's date. Picking the offset from server-time-minus-3h is exact
+    except right at the Sunday 02:00 NY switch, when the market is closed.
     """
-    return int(deal_time_msc) - server_offset_h * SECONDS_PER_HOUR * 1000
+    approx_utc = datetime.fromtimestamp(int(deal_time_msc) / 1000 - 3 * SECONDS_PER_HOUR, UTC_TZ)
+    offset_h = server_offset_at(approx_utc, config)
+    return int(deal_time_msc) - offset_h * SECONDS_PER_HOUR * 1000
 
 
 def utc_ms_to_user_tz_dt(unix_ms_utc: int, user_tz: pytz.BaseTzInfo) -> datetime:
@@ -620,7 +614,6 @@ def _resolve_tp(
 # ----------------------------------------------------------------------
 def build_trade_records(
     trades_raw: list[dict[str, Any]],
-    server_offset: int,
     user_tz: pytz.BaseTzInfo,
     config: dict[str, Any],
     sltp_cache: dict = None,
@@ -633,8 +626,8 @@ def build_trade_records(
             entry = raw["entry"]
             exit_d = raw["exit"]
 
-            entry_ms_utc = server_msc_to_utc_ms(_deal_time_msc(entry), server_offset)
-            exit_ms_utc = server_msc_to_utc_ms(_deal_time_msc(exit_d), server_offset)
+            entry_ms_utc = server_msc_to_utc_ms(_deal_time_msc(entry), config)
+            exit_ms_utc = server_msc_to_utc_ms(_deal_time_msc(exit_d), config)
             entry_s_utc = entry_ms_utc // 1000
             exit_s_utc = exit_ms_utc // 1000
             # Guarantee minimum visual duration of 120s so draw_shape never receives
@@ -1147,8 +1140,8 @@ def main() -> int:
         if not mt5.symbol_select(symbol, True):
             log("WARN", f"Could not select symbol {symbol} in Market Watch")
 
-        server_offset = detect_server_offset(symbol, config)
-        log("INFO", f"Conversion applied: server GMT+{server_offset} -> {user_tz.zone} (local)")
+        detect_server_offset(symbol, config)
+        log("INFO", f"Conversion applied: server time -> UTC per trade date -> {user_tz.zone} (local)")
 
         # ─ Initial fetch for current week
         monday_start, friday_end = get_business_week_range(user_tz, weeks_back=0)
@@ -1164,7 +1157,7 @@ def main() -> int:
             return 0
 
         sltp_cache = load_sltp_cache(config.get("sltp_log_path", ""))
-        records = build_trade_records(trades_raw, server_offset, user_tz, config,
+        records = build_trade_records(trades_raw, user_tz, config,
                                       sltp_cache=sltp_cache)
         week_records = filter_to_business_week(records, monday_start, friday_end)
         if not week_records:
@@ -1192,7 +1185,7 @@ def main() -> int:
                         log("INFO", "No deals available. Exiting.")
                         return 0
                 trades_raw = pair_deals_into_trades(deals)
-                records = build_trade_records(trades_raw, server_offset, user_tz, config,
+                records = build_trade_records(trades_raw, user_tz, config,
                                               sltp_cache=sltp_cache)
                 week_records = filter_to_business_week(records, monday_start, friday_end)
                 assign_indices_and_log(week_records, config)
@@ -1211,7 +1204,7 @@ def main() -> int:
                 continue
 
             if result == "CLEAN_CACHE":
-                prompt_clean_cache(config.get("sltp_log_path", ""), user_tz, server_offset)
+                prompt_clean_cache(config.get("sltp_log_path", ""), user_tz, config)
                 continue
 
             label, filtered = result

@@ -735,7 +735,6 @@ class EngineWorker(QObject):
         self.config = config
         self.user_tz = user_tz
         self.symbol = config["symbol_mt5"]
-        self.server_offset = 0
         self.connected = False
 
     @Slot()
@@ -759,10 +758,9 @@ class EngineWorker(QObject):
             pass
         try:
             engine.mt5.symbol_select(self.symbol, True)
-            self.server_offset = engine.detect_server_offset(self.symbol, self.config)
-        except Exception as exc:  # noqa: BLE001 — fall back to no offset
+            engine.detect_server_offset(self.symbol, self.config)  # logs + tick cross-check
+        except Exception as exc:  # noqa: BLE001 — cosmetic: trades convert per date anyway
             self.logged.emit("WARN", f"offset detection: {exc}")
-            self.server_offset = 0
         self.connected = True
         self.connection.emit(True, self.symbol, server)
 
@@ -778,8 +776,8 @@ class EngineWorker(QObject):
                 self.week_loaded.emit(weeks_back, [], monday)
                 return
             cache = engine.load_sltp_cache(self.config.get("sltp_log_path", ""))
-            records = engine.build_trade_records(trades_raw, self.server_offset,
-                                                 self.user_tz, self.config, sltp_cache=cache)
+            records = engine.build_trade_records(trades_raw, self.user_tz, self.config,
+                                                 sltp_cache=cache)
             week_records = engine.filter_to_business_week(records, monday, friday)
             engine.assign_indices_and_log(week_records, self.config)
             self.week_loaded.emit(weeks_back, week_records, monday)
@@ -792,7 +790,7 @@ class EngineWorker(QObject):
         if not self.connected:
             return
         path = self.config.get("sltp_log_path", "")
-        kept, deleted = engine.clean_old_sltp_cache(path, self.user_tz, self.server_offset)
+        kept, deleted = engine.clean_old_sltp_cache(path, self.user_tz, self.config)
         self.cache_cleaned.emit(kept >= 0, kept, deleted)
 
     @Slot()

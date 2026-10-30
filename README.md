@@ -30,7 +30,7 @@ flowchart LR
 
 1. **An Expert Advisor (`mql5/SLTPLogger.mq5`)** runs on the MT5 chart and appends every stop-loss / take-profit change to a CSV, keyed by `position_id`. MT5's deal history doesn't retain the *original* SL once a position is closed, so this log is what lets the tool recover the real risk levels afterwards.
 2. **`app/mt5_to_tradingview.py`** connects to the terminal, fetches the closed XAU/USD deals for the chosen business week, and pairs entry/exit deals into complete trades. For each one it resolves the entry, exit, SL and TP (falling back to configurable defaults when the log has no row), and computes an optional "exit line".
-3. **Timestamps** are the tricky part. MT5 encodes deal times as server-local time labelled as UTC. The tool auto-detects the broker's GMT offset (calendar-based EET/EEST heuristic, cross-checked against a live tick) and converts everything to true Unix **seconds** UTC — the unit the TradingView MCP's `draw_shape` expects.
+3. **Timestamps** are the tricky part. MT5 encodes deal times as server-local time labelled as UTC. The tool works out the broker's GMT offset for each trade's own date (ICMarkets' server clock is New York time + 7h, so it follows the US DST calendar: GMT+3 while New York is on DST, GMT+2 otherwise; the current value is cross-checked against a live tick) and converts everything to true Unix **seconds** UTC — the unit the TradingView MCP's `draw_shape` expects.
 4. **The result is a structured prompt** copied to the clipboard (with a Notepad fallback). You paste it into Claude Code (the recommended client), which has the TradingView MCP active, and it draws the positions on the chart.
 
 ## What it draws (and how you finish it)
@@ -94,7 +94,7 @@ The app icon ships in `assets/icon.ico` and the installer applies it to the shor
 - `user_timezone` — your IANA timezone, e.g. `Asia/Kolkata`, `Europe/London`, `America/New_York`. All trade times are converted to this zone.
 - `symbol_mt5` / `symbol_tradingview` — your broker's symbol on each platform (e.g. `XAUUSD` and `OANDA:XAUUSD`).
 - `sltp_log_path` — path to your MT5 `Common\Files\sltp_log.csv` (where the EA writes).
-- `server_offset_override` — leave `null` to auto-detect the broker's GMT offset (tuned for EET/EEST brokers like ICMarkets). If your broker isn't EET, set this to its fixed GMT offset (e.g. `2`).
+- `server_offset_override` — leave `null` to auto-detect the broker's GMT offset (tuned for New York + 7h brokers like ICMarkets: GMT+3 while New York is on DST, GMT+2 otherwise). If your broker's clock works differently, set this to its fixed GMT offset (e.g. `2`).
 - `default_sl_points` / `default_tp_points` — fallback SL/TP distance (in points) when the EA log has no row for a trade.
 
 **Other instruments.** This tool is built and tested **only for XAU/USD (gold)**. It will technically run on any symbol you set via `symbol_mt5` / `symbol_tradingview`, but the **SL/TP fallback** — the default levels drawn when the EA log has no data for a trade — is calibrated to gold's price scale and has **not** been tested on other instruments, so don't rely on those fallback lines outside XAU/USD. Full multi-instrument support isn't there yet. It processes one symbol per run.
@@ -137,7 +137,7 @@ python app/mt5_to_tradingview.py # the engine's interactive console menu
 
 - **Separation of concerns.** The data engine (fetch, pair, resolve SL/TP, convert time, build prompt) is fully decoupled from the CLI menu, which is exactly why two different GUIs could take over as the entry point without the core changing a line.
 - **One thread owns MetaTrader.** Every MT5 call in the Qt app happens on a single worker thread and comes back as a signal; the engine's module-level `log()` is repointed at that signal, so the whole pipeline ends up in the log drawer.
-- **Robust timezone detection.** The broker offset is anchored on a calendar heuristic and only *cross-checked* against the live tick (which depends on the PC clock and can lie) — never trusted blindly. A `server_offset_override` in config wins unconditionally.
+- **Robust timezone detection.** The broker offset is computed per trade from the US DST calendar (the European one is an hour off for ~4 weeks a year) and only *cross-checked* against the live tick (which depends on the PC clock and can lie) — never trusted blindly. A `server_offset_override` in config wins unconditionally.
 - **Atomic, retry-safe CSV cleanup.** Old cache rows are pruned with a tempfile + atomic replace, retried if the EA briefly holds the file open.
 
 ## Roadmap
